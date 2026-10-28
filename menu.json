@@ -1,13 +1,7 @@
 {
   "available": true,
   "date": "2026-10-28",
-  "site": {
-    "code": "U003128",
-    "name": "Inf. Pini, 2",
-    "siteType": "02",
-    "menuType": "01"
-  },
-  "centreName": "C.C. BOTTEGO",
+  "site": "U003128",
   "plates": [
     {
       "position": "3332",
