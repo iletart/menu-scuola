@@ -1,0 +1,33 @@
+{
+    "available": true,
+    "date": "2026-10-27",
+    "site": {
+        "code": "U003128",
+        "name": "Inf. Pini, 2",
+        "siteType": "02",
+        "menuType": "01"
+    },
+    "centreName": "C.C. BOTTEGO",
+    "plates": [
+        {
+            "position": "3234",
+            "dishCode": "P01982",
+            "name": "Pizza margherita"
+        },
+        {
+            "position": "3236",
+            "dishCode": "P00196",
+            "name": "Pomodori"
+        },
+        {
+            "position": "3238",
+            "dishCode": "P00470",
+            "name": "Gelato"
+        },
+        {
+            "position": "3239",
+            "dishCode": "P01892",
+            "name": "Pane tipo 0"
+        }
+    ]
+}
