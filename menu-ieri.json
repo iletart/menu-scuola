@@ -1,27 +1,32 @@
 {
   "available": true,
-  "date": "2026-10-27",
+  "date": "2026-10-28",
   "site": "U003128",
   "plates": [
     {
-      "position": "3234",
-      "dishCode": "P01982",
-      "name": "Pizza margherita"
+      "position": "3332",
+      "dishCode": "P102033",
+      "name": "Pasta biologica al pomodoro"
     },
     {
-      "position": "3236",
-      "dishCode": "P00196",
-      "name": "Pomodori"
+      "position": "3333",
+      "dishCode": "P100571",
+      "name": "Burger con legumi con maionese 100% vegetale biologica"
     },
     {
-      "position": "3238",
-      "dishCode": "P00470",
-      "name": "Gelato"
+      "position": "3336",
+      "dishCode": "P101204",
+      "name": "Insalata di stagione"
     },
     {
-      "position": "3239",
-      "dishCode": "P01892",
-      "name": "Pane tipo 0"
+      "position": "3337",
+      "dishCode": "P00001",
+      "name": "Frutta fresca di stagione"
+    },
+    {
+      "position": "3339",
+      "dishCode": "P01890",
+      "name": "Pane di farina integrale biologica"
     }
   ]
 }
