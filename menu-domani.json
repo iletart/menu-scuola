@@ -1,38 +1,32 @@
 {
-    "available": true,
-    "date": "2026-10-29",
-    "site": {
-        "code": "U003128",
-        "name": "Inf. Pini, 2",
-        "siteType": "02",
-        "menuType": "01"
+  "available": true,
+  "date": "2026-10-29",
+  "site": "U003128",
+  "plates": [
+    {
+      "position": "3432",
+      "dishCode": "P100215",
+      "name": "Riso olio e parmigiano"
     },
-    "centreName": "C.C. BOTTEGO",
-    "plates": [
-        {
-            "position": "3432",
-            "dishCode": "P100215",
-            "name": "Riso olio e parmigiano"
-        },
-        {
-            "position": "3433",
-            "dishCode": "P101202",
-            "name": "Bocconcini di tacchino senape e limone biologico"
-        },
-        {
-            "position": "3436",
-            "dishCode": "P100002",
-            "name": "Zucchine trifolate"
-        },
-        {
-            "position": "3437",
-            "dishCode": "P00959",
-            "name": "Frutta fresca di stagione"
-        },
-        {
-            "position": "3439",
-            "dishCode": "P01889",
-            "name": "Pane tipo 0"
-        }
-    ]
+    {
+      "position": "3433",
+      "dishCode": "P101202",
+      "name": "Bocconcini di tacchino senape e limone biologico"
+    },
+    {
+      "position": "3436",
+      "dishCode": "P100002",
+      "name": "Zucchine trifolate"
+    },
+    {
+      "position": "3437",
+      "dishCode": "P00959",
+      "name": "Frutta fresca di stagione"
+    },
+    {
+      "position": "3439",
+      "dishCode": "P01889",
+      "name": "Pane tipo 0"
+    }
+  ]
 }
