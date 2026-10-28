@@ -1,0 +1,38 @@
+{
+  "available": true,
+  "date": "2026-10-28",
+  "site": {
+    "code": "U003128",
+    "name": "Inf. Pini, 2",
+    "siteType": "02",
+    "menuType": "01"
+  },
+  "centreName": "C.C. BOTTEGO",
+  "plates": [
+    {
+      "position": "3332",
+      "dishCode": "P102033",
+      "name": "Pasta biologica al pomodoro"
+    },
+    {
+      "position": "3333",
+      "dishCode": "P100571",
+      "name": "Burger con legumi con maionese 100% vegetale biologica"
+    },
+    {
+      "position": "3336",
+      "dishCode": "P101204",
+      "name": "Insalata di stagione"
+    },
+    {
+      "position": "3337",
+      "dishCode": "P00001",
+      "name": "Frutta fresca di stagione"
+    },
+    {
+      "position": "3339",
+      "dishCode": "P01890",
+      "name": "Pane di farina integrale biologica"
+    }
+  ]
+}
