@@ -1,0 +1,172 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<title>Menu Scuola</title>
+<style>
+  body {
+    margin: 0;
+    background: #f2f2f2;
+    color: #222;
+    font-family: "Trebuchet MS", sans-serif;
+    text-align: center;
+  }
+  main {
+    box-sizing: border-box;
+    max-width: 420px;
+    min-height: 100vh;
+    margin: auto;
+    padding: 28px 22px;
+    background: white;
+    border: 2px solid #222;
+  }
+  h1 { margin: 8px 0 26px; font-size: 28px; }
+  nav { display: flex; gap: 8px; justify-content: center; }
+  button {
+    padding: 11px 14px;
+    border: 1px solid #333;
+    border-radius: 7px;
+    background: white;
+    color: #222;
+    font: inherit;
+    cursor: pointer;
+  }
+  button.selezionato { background: #222; color: white; }
+  #data { margin: 26px 0; font-size: 19px; }
+  #piatti {
+    margin: 24px auto;
+    width: fit-content;
+    max-width: 100%;
+    text-align: left;
+    line-height: 1.6;
+    font-size: 19px;
+  }
+  #stato { font-size: 14px; color: #555; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<main>
+  <h1>MENU SCUOLA</h1>
+  <nav>
+    <button data-giorno="-1">Ieri</button>
+    <button data-giorno="0" class="selezionato">Oggi</button>
+    <button data-giorno="1">Domani</button>
+  </nav>
+  <div id="data"></div>
+  <div id="piatti">Caricamento menu...</div>
+  <p id="stato"></p>
+  <button id="aggiorna">↻ Aggiorna</button>
+</main>
+
+<script>
+const FILES = {
+  "-1": "menu-ieri.json",
+  "0": "menu.json",
+  "1": "menu-domani.json"
+};
+
+const GITHUB_RAW =
+  "https://raw.githubusercontent.com/iletart/menu-scuola/main/";
+
+let giornoSelezionato = 0;
+
+const dataElement = document.getElementById("data");
+const piattiElement = document.getElementById("piatti");
+const statoElement = document.getElementById("stato");
+
+function dataSelezionata() {
+  const data = new Date();
+  data.setHours(12, 0, 0, 0);
+  data.setDate(data.getDate() + giornoSelezionato);
+  return data;
+}
+
+function dataISO(data) {
+  return [
+    data.getFullYear(),
+    String(data.getMonth() + 1).padStart(2, "0"),
+    String(data.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+function formattaData(data) {
+  return data.toLocaleDateString("it-IT", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+}
+
+async function caricaMenu() {
+  const data = dataSelezionata();
+  dataElement.textContent = formattaData(data);
+  piattiElement.textContent = "Caricamento menu...";
+  statoElement.textContent = "";
+
+  const file = FILES[String(giornoSelezionato)];
+  const url = GITHUB_RAW + file + "?t=" + Date.now();
+
+  try {
+    const risposta = await fetch(url, { cache: "no-store" });
+
+    if (!risposta.ok) {
+      throw new Error(
+        `File ${file} non trovato o non accessibile (HTTP ${risposta.status}).`
+      );
+    }
+
+    const menu = await risposta.json();
+
+    if (menu.date && menu.date !== dataISO(data)) {
+      statoElement.textContent =
+        "Attenzione: il file contiene la data " + menu.date + ".";
+    }
+
+    if (menu.available === false ||
+        !Array.isArray(menu.plates) ||
+        menu.plates.length === 0) {
+      piattiElement.textContent = "Menu non disponibile per questa data.";
+      return;
+    }
+
+    piattiElement.replaceChildren();
+
+    menu.plates.forEach(piatto => {
+      const riga = document.createElement("div");
+      riga.textContent = typeof piatto === "string"
+        ? piatto
+        : (piatto.name || piatto.description || "");
+      if (riga.textContent) piattiElement.appendChild(riga);
+    });
+
+    if (!piattiElement.children.length) {
+      piattiElement.textContent = "Nessun piatto trovato.";
+    }
+  } catch (errore) {
+    piattiElement.textContent = "Non riesco a leggere il menu.";
+    statoElement.textContent =
+      errore.message +
+      "\nVerifica che il file esista nel repository GitHub e sia pubblico.";
+  }
+}
+
+document.querySelectorAll("[data-giorno]").forEach(pulsante => {
+  pulsante.addEventListener("click", () => {
+    giornoSelezionato = Number(pulsante.dataset.giorno);
+    document.querySelectorAll("[data-giorno]").forEach(b =>
+      b.classList.toggle("selezionato", b === pulsante)
+    );
+    caricaMenu();
+  });
+});
+
+document.getElementById("aggiorna").addEventListener("click", caricaMenu);
+
+caricaMenu();
+</script>
+</body>
+</html>
