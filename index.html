@@ -115,6 +115,28 @@ h3{
   z-index:-1;
 }
 
+.moon-icon {
+  display:block;
+  width:30px;
+  height:30px;
+  margin:7px auto 0 auto;
+  position:relative;
+  left:5px;
+  border-radius:50%;
+  background:#e5c65a;
+}
+
+.moon-icon:after {
+  content:"";
+  position:absolute;
+  width:27px;
+  height:27px;
+  left:10px;
+  top:-5px;
+  border-radius:50%;
+  background:white;
+}
+
 #info{
   overflow:hidden
 }
@@ -675,18 +697,18 @@ function renderWeather() {
   else if (code === 85 || code === 86) icon = "🌨️";
   else if (code >= 95) icon = "⛈️";
 
-	if (iconEl) {
-	  var hour = new Date().getHours();
-	  var night = (hour >= 20 || hour < 6);
+  if (iconEl) {
+    var hour = new Date().getHours();
+    var night = (hour >= 17 || hour < 6);
 
-	  if (night && (code === 0 || code === 1 || code === 2)) {
-		iconEl.innerHTML = "☾";
-	  } else if (code === 0 || code === 1) {
-		iconEl.innerHTML = "<span class='sun-icon'></span>";
-	  } else {
-		iconEl.innerHTML = icon;
-	  }
-	}
+    if (night && (code === 0 || code === 1 || code === 2)) {
+      iconEl.innerHTML = "<span class='moon-icon'></span>";
+    } else if (code === 0 || code === 1) {
+      iconEl.innerHTML = "<span class='sun-icon'></span>";
+    } else {
+      iconEl.innerHTML = icon;
+    }
+  }
 
   el.innerHTML =
     "Milano: " + temp + "°C, " + wcText(code) +
