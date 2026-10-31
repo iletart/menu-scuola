@@ -1,0 +1,47 @@
+{
+  "calendar": "Famiglia",
+  "generated_at": "2026-10-31T13:41:24.108567+01:00",
+  "period_days": 7,
+  "events": [
+    {
+      "id": "12ug354gtoq95bjhtvc2lbvafc_20261102T150000Z",
+      "title": "Motricità",
+      "start": "2026-11-02T15:00:00Z",
+      "end": "2026-11-02T16:30:00Z",
+      "all_day": false,
+      "location": ""
+    },
+    {
+      "id": "01guhquf80r3kbvobnkb9hv1pk_20261103T163000Z",
+      "title": "Piscina",
+      "start": "2026-11-03T16:30:00Z",
+      "end": "2026-11-03T17:30:00Z",
+      "all_day": false,
+      "location": ""
+    },
+    {
+      "id": "34ec9dkbompbtjfs9oa9f2apjb_20261104T160000Z",
+      "title": "Atletica",
+      "start": "2026-11-04T16:00:00Z",
+      "end": "2026-11-04T17:00:00Z",
+      "all_day": false,
+      "location": ""
+    },
+    {
+      "id": "072ngfmhkv80b5s5n8h83qgatj_20261105T151500Z",
+      "title": "Inglese Mattia",
+      "start": "2026-11-05T15:15:00Z",
+      "end": "2026-11-05T16:30:00Z",
+      "all_day": false,
+      "location": ""
+    },
+    {
+      "id": "ckrj2o9icpj3eb9gchi3cb9k71hj0bb1c4r68b9l74qj6dhm6ph32c1i64_20261106T163000Z",
+      "title": "Rugby",
+      "start": "2026-11-06T16:30:00Z",
+      "end": "2026-11-06T17:30:00Z",
+      "all_day": false,
+      "location": ""
+    }
+  ]
+}
