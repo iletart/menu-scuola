@@ -258,7 +258,7 @@ function renderAgenda(){
   // Pulsanti di navigazione
   var nav = mk("div", "agenda-nav");
 
-  var btnCurrent = mk("button", "", "Settimana corrente");
+  var btnCurrent = mk("button", "", "This week");
   btnCurrent.type = "button";
   btnCurrent.disabled = agendaWeekOffset === 0;
   btnCurrent.onclick = function(){
@@ -266,7 +266,7 @@ function renderAgenda(){
     safe(renderAgenda);
   };
 
-  var btnNext = mk("button", "", "Settimana successiva");
+  var btnNext = mk("button", "", "Next Week");
   btnNext.type = "button";
   btnNext.disabled = agendaWeekOffset === 1;
   btnNext.onclick = function(){
