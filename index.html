@@ -1033,12 +1033,37 @@ function todoConnect(){
       pinInput.style.display = "none";
     }
 
-    var connectButton = $("todoConnectButton");
-    if(connectButton){
-      connectButton.style.display = "none";
-    }
+	var connectButton = $("todoConnectButton");
+	if(connectButton){
+	  connectButton.style.display = "none";
+	}
 
-    todoSchedulePoll();
+	/* Barra aggiunta attività */
+	var ctl = $("todoCtl");
+	clear(ctl);
+
+	var inp = mk("input");
+	inp.id = "todoInput";
+	inp.type = "text";
+	inp.maxLength = 200;
+	inp.placeholder = "Nuova attività";
+
+	inp.onkeydown = function(ev){
+	  ev = ev || window.event;
+	  if(ev.keyCode === 13){
+		todoAdd();
+	  }
+	};
+
+	var add = mk("button", "", "Aggiungi");
+	add.type = "button";
+	add.onclick = todoAdd;
+
+	ctl.appendChild(inp);
+	ctl.appendChild(document.createTextNode(" "));
+	ctl.appendChild(add);
+
+	todoSchedulePoll();
   });
 }
 
