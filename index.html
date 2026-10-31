@@ -24,40 +24,35 @@ h2{font-size:1.05em;margin:0 0 6px 0;padding:0 0 3px 0;border-bottom:2px solid #
 h3{font-size:1em;margin:8px 0 2px 0;text-transform:capitalize}
 
 .row{
-  display:-webkit-box;
-  display:-webkit-flex;
   display:flex;
-  -webkit-box-align:stretch;
-  -webkit-align-items:stretch;
   align-items:stretch;
-  margin:0
+  margin:0;
 }
 
 .col{
   float:none;
   width:50%;
   min-width:0;
-  -webkit-box-sizing:border-box;
   box-sizing:border-box;
-  display:-webkit-box;
-  display:-webkit-flex;
   display:flex;
-  -webkit-box-orient:vertical;
-  -webkit-box-direction:normal;
-  -webkit-flex-direction:column;
-  flex-direction:column
+  flex-direction:column;
 }
 
-.col>.box:first-child{
-  -webkit-box-flex:0;
-  -webkit-flex:0 0 auto;
-  flex:0 0 auto
+@media (max-width:560px){
+  .row{
+    display:block;
+  }
+
+  .col{
+    display:block;
+    width:100%;
+  }
 }
 
-.col>.box:last-child{
-  -webkit-box-flex:1;
-  -webkit-flex:1 1 auto;
-  flex:1 1 auto
+.weekend-message{
+  text-align:center;
+  font-weight:bold;
+  padding:18px 4px;
 }
 
 .cf:after{content:"";display:block;clear:both}
@@ -541,7 +536,7 @@ function renderRoutes(){
       Math.floor(Math.random() * WEEKEND_PHRASES.length)
     ];
 
-    box.appendChild(mk("div", "rt", phrase));
+    box.appendChild(mk("div", "weekend-message", phrase));
     setText($("routesStatus"), "");
     return;
   }
@@ -754,10 +749,7 @@ function renderMenuWeekend(){
   }
 
   var phrase = phrases[Math.floor(Math.random() * phrases.length)];
-  var message = mk("div", "", phrase);
-  message.style.textAlign = "center";
-  message.style.fontWeight = "bold";
-  message.style.padding = "18px 4px";
+  var message = mk("div", "weekend-message", phrase);
 
   list.appendChild(message);
 }
@@ -811,6 +803,38 @@ safe(loadRoutes);
 safe(loadTodo);
 safe(updateMenuButtons);
 safe(menuLoop);
+
+function alignBottomBoxes(){
+  var cols = document.querySelectorAll(".col");
+  if(cols.length < 2) return;
+
+  var leftBoxes = cols[0].querySelectorAll(".box");
+  var rightBoxes = cols[1].querySelectorAll(".box");
+
+  if(leftBoxes.length < 2 || rightBoxes.length < 2) return;
+
+  var lowerLeft = leftBoxes[1];
+  var lowerRight = rightBoxes[1];
+
+  lowerLeft.style.minHeight = "";
+  lowerRight.style.minHeight = "";
+
+  if(window.innerWidth <= 560) return;
+
+  var hLeft = lowerLeft.offsetHeight;
+  var hRight = lowerRight.offsetHeight;
+  var target = Math.max(hLeft, hRight);
+
+  lowerLeft.style.minHeight = target + "px";
+  lowerRight.style.minHeight = target + "px";
+}
+
+window.onresize = function(){
+  alignBottomBoxes();
+};
+
+window.setTimeout(alignBottomBoxes, 500);
+window.setTimeout(alignBottomBoxes, 2000);
 </script>
 </body>
 </html>
