@@ -208,21 +208,23 @@ input{
 }
 
 .todo{
-  margin:3px 0;
-  display:block;
+  display:table;
   width:100%;
-  overflow:hidden;
+  margin:3px 0;
+  table-layout:fixed;
 }
 
 .todo-text{
-  display:block;
-  margin-right:65px;
+  display:table-cell;
+  vertical-align:middle;
+  text-align:left;
   word-wrap:break-word;
 }
 
 .todo-actions{
-  float:right;
-  width:60px;
+  display:table-cell;
+  width:65px;
+  vertical-align:middle;
   text-align:right;
   white-space:nowrap;
 }
