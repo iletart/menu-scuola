@@ -50,7 +50,7 @@ li{margin:3px 0}
 
 <div class="row cf">
   <div class="col"><div class="box">
-    <h2>Agenda famiglia</h2>
+    <h2 id="agendaTitle">Agenda famiglia</h2>
     <div id="agenda">Caricamento...</div>
     <div class="small" id="agendaStatus"></div>
   </div></div>
@@ -239,12 +239,14 @@ function cmpEv(a, b){ return a.key - b.key; }
 
 
 
+
 function renderAgenda(){
   var box = $("agenda"), st = $("agendaStatus");
   clear(box);
 
   if(!agendaData){
     setText(box, agendaErr ? "Agenda non disponibile (file non raggiungibile)." : "Caricamento...");
+    setText(st, "");
     return;
   }
 
@@ -254,6 +256,24 @@ function renderAgenda(){
 
   // Intervallo della settimana visualizzata
   var weekEnd = monday + 6;
+
+  // Titolo con orario ultimo aggiornamento
+  var gen = parseIso(agendaData.generated_at);
+  var title = "AGENDA FAMIGLIA";
+
+  if(gen !== null){
+    title += " (aggiornata alle " + hhmmRome(gen) + ")";
+
+    if(new Date().getTime() - gen > 3 * 3600000){
+      title += " (dati vecchi)";
+    }
+  }
+
+  if(agendaErr){
+    title += " - rete non disponibile";
+  }
+
+  setText($("agendaTitle"), title);
 
   // Pulsanti di navigazione
   var nav = mk("div", "agenda-nav");
@@ -278,9 +298,16 @@ function renderAgenda(){
   nav.appendChild(btnNext);
   box.appendChild(nav);
 
-  // Date della settimana visualizzata
+  // Date settimana: Lunedì 26/10 – Domenica 01/11
+  function weekDateText(num){
+    var d = dateOfDayNum(num);
+    var day = GIORNI[d.getUTCDay()];
+    return day.charAt(0).toUpperCase() + day.substring(1) +
+      " " + p2(d.getUTCDate()) + "/" + p2(d.getUTCMonth() + 1);
+  }
+
   box.appendChild(mk("div", "agenda-period",
-    fullDateText(monday) + " – " + fullDateText(weekEnd)
+    weekDateText(monday) + " – " + weekDateText(weekEnd)
   ));
 
   for(i = 0; i < 7; i++){ buckets.push([]); }
@@ -288,7 +315,7 @@ function renderAgenda(){
   var ev = agendaData.events || [];
 
   for(i = 0; i < ev.length; i++){
-    var e = ev[i], title = e.title || "(senza titolo)";
+    var e = ev[i], titleEv = e.title || "(senza titolo)";
 
     if(e.all_day){
       var sd = dateOnlyNum(e.start), ed = dateOnlyNum(e.end);
@@ -301,21 +328,20 @@ function renderAgenda(){
           buckets[n - monday].push({
             key: -1,
             time: "Tutto il giorno",
-            title: title
+            title: titleEv
           });
         }
       }
     } else {
       var ms = parseIso(e.start);
       if(ms === null){ continue; }
-
       n = dayNumOfRome(toRome(ms));
 
       if(n >= monday && n < monday + 7){
         buckets[n - monday].push({
           key: ms,
           time: hhmmRome(ms),
-          title: title
+          title: titleEv
         });
       }
     }
@@ -333,10 +359,8 @@ function renderAgenda(){
 
     for(j = 0; j < buckets[i].length; j++){
       var row = mk("div", "ev");
-
       row.appendChild(mk("span", "t", buckets[i][j].time));
       row.appendChild(mk("span", "tt", buckets[i][j].title));
-
       box.appendChild(row);
     }
   }
@@ -345,22 +369,10 @@ function renderAgenda(){
     box.appendChild(mk("div", "", "Nessun impegno nella settimana."));
   }
 
-  var gen = parseIso(agendaData.generated_at), txt = "";
-
-  if(gen !== null){
-    txt = "Agenda aggiornata alle " + hhmmRome(gen);
-
-    if(new Date().getTime() - gen > 3 * 3600000){
-      txt += " (dati vecchi)";
-    }
-  }
-
-  if(agendaErr){
-    txt += " - rete non disponibile, mostro gli ultimi dati";
-  }
-
-  setText(st, txt);
+  // L'aggiornamento è ora nel titolo
+  setText(st, "");
 }
+
 
 
 
