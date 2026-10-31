@@ -301,6 +301,28 @@ li{margin:3px 0}
       <h2 id="taskDateTitle">Task del ...</h2>
     </div>
 
+<div class="col">
+    <div class="box">
+      <h2 id="taskDateTitle">Task del ...</h2>
+
+      <div id="taskDayButtons">
+        <button type="button" id="tb-ieri">Ieri</button>
+        <button type="button" id="tb-oggi" class="sel">Oggi</button>
+        <button type="button" id="tb-domani">Domani</button>
+      </div>
+
+      <div id="taskCtl"></div>
+      <div id="taskList"></div>
+      <div class="small" id="taskStatus"></div>
+    </div>
+
+    <div class="box">
+      <h2>Da fare</h2>
+      <div id="todoCtl"></div>
+      <div id="todoList"></div>
+      <div class="small" id="todoStatus"></div>
+    </div>
+	
     <div class="box">
       <h2>Da fare</h2>
       <div id="todoCtl"></div>
@@ -1087,6 +1109,7 @@ function todoConnect(){
 	ctl.appendChild(add);
 
 	todoSchedulePoll();
+	initTasks();
   });
 }
 
@@ -1264,6 +1287,289 @@ function loadTodo(){
   setText(st, "Inserisci il PIN per caricare la lista condivisa.");
 }
 
+/* ===== TASK GIORNALIERI ===== */
+
+var taskSel = "oggi";
+var taskDays = {};
+var taskReady = false;
+var taskBusy = false;
+
+var TASK_OFF = {
+  ieri: -1,
+  oggi: 0,
+  domani: 1
+};
+
+function taskDateKey(offset){
+  var now = toRome(new Date().getTime());
+  var d = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate() + offset
+  ));
+
+  return d.getUTCFullYear() + "-" +
+    p2(d.getUTCMonth() + 1) + "-" +
+    p2(d.getUTCDate());
+}
+
+function taskDateLabel(offset){
+  var giorni = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
+  var mesi = ["gen", "feb", "mar", "apr", "mag", "giu",
+              "lug", "ago", "set", "ott", "nov", "dic"];
+
+  var d = new Date();
+  var now = toRome(new Date().getTime());
+
+  d = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate() + offset
+  ));
+
+  return giorni[d.getUTCDay()] + " " +
+    p2(d.getUTCDate()) + " " +
+    mesi[d.getUTCMonth()];
+}
+
+function taskRequest(method, data, callback){
+  var x = new XMLHttpRequest();
+  var url = CONFIG.todoWorkerUrl + "?list=tasks";
+
+  x.open(method, url, true);
+  x.setRequestHeader("X-Todo-Pin", todoPin);
+
+  if(method === "POST"){
+    x.setRequestHeader("Content-Type", "application/json");
+  }
+
+  x.onreadystatechange = function(){
+    if(x.readyState !== 4) return;
+
+    var result = null;
+
+    try {
+      result = parseJson(x.responseText);
+    } catch(e) {}
+
+    if(x.status >= 200 && x.status < 300){
+      callback(null, result);
+    } else {
+      callback(
+        result && result.error ? result.error : "Errore HTTP " + x.status,
+        result
+      );
+    }
+  };
+
+  x.onerror = function(){
+    callback("Errore di connessione", null);
+  };
+
+  x.ontimeout = function(){
+    callback("Timeout di connessione", null);
+  };
+
+  x.timeout = 20000;
+
+  try {
+    x.send(method === "POST" ? JSON.stringify(data) : null);
+  } catch(e) {
+    callback("Errore di invio richiesta", null);
+  }
+}
+
+function selectTask(day){
+  taskSel = day;
+  updateTaskButtons();
+  renderTasks();
+}
+
+function updateTaskButtons(){
+  var days = ["ieri", "oggi", "domani"];
+  var i;
+
+  for(i = 0; i < days.length; i++){
+    var el = $("tb-" + days[i]);
+    if(el){
+      el.className = days[i] === taskSel ? "sel" : "";
+    }
+  }
+
+  setText(
+    $("taskDateTitle"),
+    "Task del " + taskDateLabel(TASK_OFF[taskSel])
+  );
+}
+
+function loadTasks(){
+  if(!todoConnected){
+    setText($("taskStatus"), "Connetti prima la lista condivisa.");
+    return;
+  }
+
+  setText($("taskStatus"), "Caricamento...");
+
+  taskRequest("GET", null, function(err, data){
+    if(err || !data || !data.days){
+      setText($("taskStatus"), "Task non disponibili: " + (err || "risposta non valida"));
+      return;
+    }
+
+    taskDays = data.days;
+    taskReady = true;
+    renderTasks();
+    setText($("taskStatus"), "Task sincronizzati.");
+  });
+}
+
+function renderTasks(){
+  updateTaskButtons();
+
+  var list = $("taskList");
+  clear(list);
+
+  if(!taskReady){
+    return;
+  }
+
+  var key = taskDateKey(TASK_OFF[taskSel]);
+  var items = taskDays[key] || [];
+  var i;
+
+  for(i = 0; i < items.length; i++){
+    list.appendChild(taskRow(i, items[i]));
+  }
+
+  if(!items.length){
+    list.appendChild(mk("div", "", "Nessuna attività."));
+  }
+
+  scheduleBoxAlignment();
+}
+
+function taskRow(index, item){
+  var row = mk("div", "todo");
+
+  var txt = mk(
+    "span",
+    item.done ? "todo-text done" : "todo-text",
+    item.text
+  );
+
+  row.appendChild(txt);
+
+  var actions = mk("span", "todo-actions");
+
+  var b = mk("button", "", "✓");
+  b.type = "button";
+  b.disabled = taskBusy;
+  b.title = item.done ? "Segna come da fare" : "Completa";
+
+  b.onclick = function(){
+    changeTask("toggle", index);
+  };
+
+  var del = mk("button", "", "🗑");
+  del.type = "button";
+  del.disabled = taskBusy;
+  del.title = "Elimina attività";
+
+  del.onclick = function(){
+    changeTask("delete", index);
+  };
+
+  actions.appendChild(b);
+  actions.appendChild(del);
+  row.appendChild(actions);
+
+  return row;
+}
+
+function changeTask(action, index, text){
+  if(!taskReady || taskBusy) return;
+
+  var key = taskDateKey(TASK_OFF[taskSel]);
+
+  var data = {
+    action: action,
+    date: key
+  };
+
+  if(action === "add"){
+    data.text = text;
+  } else {
+    data.index = index;
+  }
+
+  taskBusy = true;
+  renderTasks();
+  setText($("taskStatus"), "Salvataggio...");
+
+  taskRequest("POST", data, function(err, result){
+    taskBusy = false;
+
+    if(err || !result || !result.days){
+      setText($("taskStatus"), "Salvataggio non riuscito: " + (err || "errore"));
+      loadTasks();
+      return;
+    }
+
+    taskDays = result.days;
+    renderTasks();
+    setText($("taskStatus"), "Task sincronizzati.");
+  });
+}
+
+function addTask(){
+  var inp = $("taskInput");
+  if(!inp) return;
+
+  var value = inp.value.replace(/^\s+|\s+$/g, "");
+
+  if(!value) return;
+
+  if(value.length > 200){
+    setText($("taskStatus"), "Massimo 200 caratteri.");
+    return;
+  }
+
+  changeTask("add", null, value);
+  inp.value = "";
+}
+
+function initTasks(){
+  var ctl = $("taskCtl");
+  clear(ctl);
+
+  var inp = mk("input");
+  inp.id = "taskInput";
+  inp.type = "text";
+  inp.maxLength = 200;
+  inp.placeholder = "Nuova attività";
+
+  inp.onkeydown = function(ev){
+    ev = ev || window.event;
+    if(ev.keyCode === 13){
+      addTask();
+    }
+  };
+
+  var add = mk("button", "", "Aggiungi");
+  add.type = "button";
+  add.onclick = addTask;
+
+  ctl.appendChild(inp);
+  ctl.appendChild(document.createTextNode(" "));
+  ctl.appendChild(add);
+
+  $("tb-ieri").onclick = function(){ selectTask("ieri"); };
+  $("tb-oggi").onclick = function(){ selectTask("oggi"); };
+  $("tb-domani").onclick = function(){ selectTask("domani"); };
+
+  updateTaskButtons();
+  loadTasks();
+}
 
 /* ===== MENU SCUOLA ===== */
 var MENUF = {ieri: "menu-ieri.json", oggi: "menu.json", domani: "menu-domani.json"};
