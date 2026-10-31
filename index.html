@@ -608,16 +608,22 @@ function renderWeather() {
   var el = $("weather");
   var iconEl = $("clockWeather");
 
-  if (!wData) {
-    el.innerHTML = wErr ? "Meteo non disponibile" : "Meteo...";
-    iconEl.innerHTML = "";
+  var current = null;
+
+  if (wData) {
+    current = wData.current || wData.current_weather || null;
+  }
+
+  if (!current || current.weather_code === undefined) {
+    el.innerHTML = wErr ? "Meteo non disponibile" : "Meteo in caricamento...";
+    if (iconEl) iconEl.innerHTML = "";
     return;
   }
 
-  var code = wData.current.weather_code;
-  var temp = Math.round(wData.current.temperature_2m);
-  var feels = Math.round(wData.current.apparent_temperature);
-
+  var code = current.weather_code;
+  var temp = Math.round(current.temperature_2m);
+  var feels = Math.round(current.apparent_temperature);
+  
   var icon = "🌤️";
 
   if (code === 0) icon = "☀️";
@@ -976,9 +982,10 @@ function alignBottomBoxes(){
 
   if(window.innerWidth <= 560) return;
 
-  var hLeft = lowerLeft.offsetHeight;
-  var hRight = lowerRight.offsetHeight;
-  var target = Math.max(hLeft, hRight);
+  var heightLeft = lowerLeft.offsetHeight;
+  var heightRight = lowerRight.offsetHeight;
+
+  var target = Math.max(heightLeft, heightRight);
 
   lowerLeft.style.minHeight = target + "px";
   lowerRight.style.minHeight = target + "px";
