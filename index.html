@@ -85,7 +85,7 @@ h3{
   height:34px;
   margin:5px auto 0 auto;
   position:relative;
-  left:25px;
+  left:30px;
   border-radius:50%;
   background:#f5b400;
   border:3px solid #e0a000;
@@ -120,7 +120,7 @@ h3{
   height:30px;
   margin:7px auto 0 auto;
   position:relative;
-  left:25px;
+  left:30px;
   border-radius:50%;
   background:#e5c65a;
 }
@@ -731,14 +731,14 @@ function renderWeather() {
   else if (code >= 95) icon = "⛈️";
 
   if (iconEl) {
-    var now = new Date();
-    var hour = now.getHours();
-    var minute = now.getMinutes();
+	var now = toRome(new Date().getTime());
+	var hour = now.getHours();
+	var minute = now.getMinutes();
     var currentTime = hour * 60 + minute;
 
     var today = now.getFullYear() + "-" +
-                (now.getMonth() + 1) + "-" +
-                now.getDate();
+            (now.getMonth() + 1) + "-" +
+            now.getDate();
 
     /* Fallback se gli orari astronomici non sono disponibili */
     var night = (hour >= 17 || hour < 6);
