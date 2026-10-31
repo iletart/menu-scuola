@@ -219,6 +219,9 @@ function updateClock(){
 
 /* ===== AGENDA ===== */
 var agendaData = null, agendaErr = false;
+
+var agendaWeekOffset = 0;
+
 function loadAgenda(){
   getJson([CONFIG.base + "agenda.json", "agenda.json"], function(err, d){
     if(!err && d && d.events){ agendaData = d; agendaErr = false; } else { agendaErr = true; }
@@ -234,6 +237,7 @@ function dayLabel(n, today){
 }
 function cmpEv(a, b){ return a.key - b.key; }
 
+
 function renderAgenda(){
   var box = $("agenda"), st = $("agendaStatus");
   clear(box);
@@ -245,10 +249,18 @@ function renderAgenda(){
 
   var today = todayNum(), buckets = [], i, j, n;
   var monday = today - ((dateOfDayNum(today).getUTCDay() + 6) % 7);
-  
-  alert("Oggi: " + fullDateText(today) + "\nLunedì: " + fullDateText(monday));
-  
-  setText($("agendaStatus"), "DEBUG oggi=" + fullDateText(today) + " | lunedì=" + fullDateText(monday));
+  monday += agendaWeekOffset * 7;
+
+  // Navigazione tra settimane
+  var nav = mk("div", "agenda-nav");
+  var btn = mk("button", "", agendaWeekOffset === 0 ? "Settimana successiva" : "Settimana corrente");
+  btn.type = "button";
+  btn.onclick = function(){
+    agendaWeekOffset = agendaWeekOffset === 0 ? 1 : 0;
+    safe(renderAgenda);
+  };
+  nav.appendChild(btn);
+  box.appendChild(nav);
 
   for(i = 0; i < 7; i++){ buckets.push([]); }
 
@@ -308,7 +320,7 @@ function renderAgenda(){
     }
   }
 
-  if(!any){ setText(box, "Nessun impegno nella settimana."); }
+  if(!any){ box.appendChild(mk("div", "", "Nessun impegno nella settimana.")); }
 
   var gen = parseIso(agendaData.generated_at), txt = "";
 
@@ -326,6 +338,7 @@ function renderAgenda(){
 
   setText(st, txt);
 }
+
 
 /* ===== METEO (Open-Meteo, nessuna chiave) ===== */
 var wData = null, wTime = 0, wErr = false;
