@@ -72,11 +72,45 @@ h3{
 #clockWeather {
   float:left;
   clear:left;
-  width:calc(3.2em * 1.5);
+  width:5em;
+  height:3em;
   text-align:center;
-  font-size:1.5em;
-  line-height:1.2;
   margin-top:4px;
+  position:relative;
+}
+
+.sun-icon {
+  display:block;
+  width:34px;
+  height:34px;
+  margin:5px auto 0 auto;
+  border-radius:50%;
+  background:#f5b400;
+  border:3px solid #e0a000;
+  box-sizing:border-box;
+  position:relative;
+}
+
+.sun-icon:before {
+  content:"";
+  position:absolute;
+  width:48px;
+  height:4px;
+  background:#e0a000;
+  left:-10px;
+  top:12px;
+  z-index:-1;
+}
+
+.sun-icon:after {
+  content:"";
+  position:absolute;
+  width:4px;
+  height:48px;
+  background:#e0a000;
+  left:12px;
+  top:-10px;
+  z-index:-1;
 }
 
 #info{
@@ -639,7 +673,13 @@ function renderWeather() {
   else if (code === 85 || code === 86) icon = "🌨️";
   else if (code >= 95) icon = "⛈️";
 
-  if (iconEl) iconEl.innerHTML = icon;
+  if (iconEl) {
+  if (code === 0 || code === 1) {
+    iconEl.innerHTML = "<span class='sun-icon'></span>";
+  } else {
+    iconEl.innerHTML = icon;
+  }
+}
 
   el.innerHTML =
     "Milano: " + temp + "°C, " + wcText(code) +
