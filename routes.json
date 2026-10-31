@@ -1,0 +1,17 @@
+{
+  "routes": {
+    "mattina": {
+      "id": "mattina",
+      "from": "Casa",
+      "to": "Lavoro",
+      "arrival": "08:00",
+      "departure": "2026-10-31T07:40:36+01:00",
+      "duration_minutes": 14,
+      "static_duration_minutes": 14,
+      "buffer_minutes": 5,
+      "distance_meters": 10717,
+      "calculated_at": "2026-10-31T16:21:46.259143+01:00"
+    }
+  },
+  "generated_at": "2026-10-31T16:21:46.259143+01:00"
+}
