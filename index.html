@@ -50,7 +50,7 @@ h3{font-size:1em;margin:8px 0 2px 0;text-transform:capitalize}
 }
 
 .weekend-message{
-  text-align:center;
+  text-align:left;
   font-weight:bold;
   padding:18px 4px;
 }
@@ -476,14 +476,55 @@ function loadWeather(){
 }
 function renderWeather(){
   var el = $("weather");
-  if(!wData){ setText(el, "Meteo non disponibile"); return; }
-  var t = "Milano: " + Math.round(wData.temperature_2m) + "°C, " + wcText(wData.weather_code);
-  if(typeof wData.apparent_temperature === "number"){ t += " (percepita " + Math.round(wData.apparent_temperature) + "°C)"; }
-  if(wErr){ t += " - ultimo dato delle " + hhmmRome(wTime); }
+  var icon = "";
+  var code;
+
+  if(!wData){
+    setText(el, "Meteo non disponibile");
+    return;
+  }
+
+  code = wData.weather_code;
+
+  if(code === 0){
+    icon = "☀️";
+  } else if(code === 1 || code === 2){
+    icon = "⛅";
+  } else if(code === 3){
+    icon = "☁️";
+  } else if(code === 45 || code === 48){
+    icon = "🌫️";
+  } else if(code >= 51 && code <= 57){
+    icon = "🌦️";
+  } else if(code >= 61 && code <= 67){
+    icon = "🌧️";
+  } else if(code >= 71 && code <= 77){
+    icon = "❄️";
+  } else if(code >= 80 && code <= 82){
+    icon = "🌧️";
+  } else if(code === 85 || code === 86){
+    icon = "🌨️";
+  } else if(code >= 95){
+    icon = "⛈️";
+  } else {
+    icon = "🌤️";
+  }
+
+  var t = icon + " Milano: " +
+    Math.round(wData.temperature_2m) + "°C, " +
+    wcText(code);
+
+  if(typeof wData.apparent_temperature === "number"){
+    t += " (percepita " +
+      Math.round(wData.apparent_temperature) + "°C)";
+  }
+
+  if(wErr){
+    t += " - ultimo dato delle " + hhmmRome(wTime);
+  }
+
   setText(el, t);
 }
-
-/* ===== SPOSTAMENTI ===== */
 
 /* ===== SPOSTAMENTI ===== */
 
