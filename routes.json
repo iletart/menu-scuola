@@ -11,7 +11,19 @@
       "buffer_minutes": 5,
       "distance_meters": 10717,
       "calculated_at": "2026-10-31T16:21:46.259143+01:00"
+    },
+    "pomeriggio": {
+      "id": "pomeriggio",
+      "from": "Lavoro",
+      "to": "Asilo",
+      "arrival": "16:45",
+      "departure": "2026-10-31T16:25:13+01:00",
+      "duration_minutes": 15,
+      "static_duration_minutes": 11,
+      "buffer_minutes": 5,
+      "distance_meters": 9927,
+      "calculated_at": "2026-10-31T16:22:09.653595+01:00"
     }
   },
-  "generated_at": "2026-10-31T16:21:46.259143+01:00"
+  "generated_at": "2026-10-31T16:22:09.653595+01:00"
 }
