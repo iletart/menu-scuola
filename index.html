@@ -66,6 +66,16 @@ h3{
   margin-right:16px
 }
 
+#clockWeather {
+  float:left;
+  clear:left;
+  width:calc(3.2em * 1.5);
+  text-align:center;
+  font-size:1.5em;
+  line-height:1.2;
+  margin-top:4px;
+}
+
 #info{
   overflow:hidden
 }
@@ -164,16 +174,6 @@ li{margin:3px 0}
     float:none;
     width:100%
   }
-
-	#clockWeather {
-	  float:left;
-	  clear:left;
-	  width:calc(3.2em * 1.5);
-	  text-align:center;
-	  font-size:1.5em;
-	  line-height:1.2;
-	  margin-top:4px;
-	}
 
 	#info {
 	  overflow:hidden;
@@ -576,6 +576,8 @@ function renderAgenda(){
 
   // L'aggiornamento è ora nel titolo
   setText(st, "");
+  
+  scheduleBoxAlignment();
 }
 
 
@@ -612,22 +614,16 @@ function renderWeather() {
   var el = $("weather");
   var iconEl = $("clockWeather");
 
-  var current = null;
-
-  if (wData) {
-    current = wData.current || wData.current_weather || null;
-  }
-
-  if (!current || current.weather_code === undefined) {
+  if (!wData || wData.weather_code === undefined) {
     el.innerHTML = wErr ? "Meteo non disponibile" : "Meteo in caricamento...";
     if (iconEl) iconEl.innerHTML = "";
     return;
   }
 
-  var code = current.weather_code;
-  var temp = Math.round(current.temperature_2m);
-  var feels = Math.round(current.apparent_temperature);
-  
+  var code = wData.weather_code;
+  var temp = Math.round(wData.temperature_2m);
+  var feels = Math.round(wData.apparent_temperature);
+
   var icon = "🌤️";
 
   if (code === 0) icon = "☀️";
@@ -641,7 +637,7 @@ function renderWeather() {
   else if (code === 85 || code === 86) icon = "🌨️";
   else if (code >= 95) icon = "⛈️";
 
-  iconEl.innerHTML = icon;
+  if (iconEl) iconEl.innerHTML = icon;
 
   el.innerHTML =
     "Milano: " + temp + "°C, " + wcText(code) +
@@ -764,6 +760,9 @@ function renderRoutes(){
   }
 
   setText($("routesStatus"), st);
+  
+  scheduleBoxAlignment();
+  
 }
 
 /* ===== FINE SPOSTAMENTI ===== */
@@ -787,6 +786,7 @@ function todoAdd(){
 }
 function todoToggle(i){ todoItems[i].done = !todoItems[i].done; todoSave(); renderTodo(); }
 function todoDel(i){ todoItems.splice(i, 1); todoSave(); renderTodo(); }
+
 function renderTodo(){
   var box = $("todoList"), i;
   clear(box);
@@ -794,6 +794,9 @@ function renderTodo(){
     box.appendChild(todoRow(i));
   }
   if(!todoItems.length){ box.appendChild(mk("div", "", "Nessuna attività.")); }
+  
+  scheduleBoxAlignment();
+  
 }
 function todoRow(i){
   var it = todoItems[i], row = mk("div", "todo");
@@ -917,6 +920,9 @@ function renderMenuWeekend(){
   var message = mk("div", "weekend-message", phrase);
 
   list.appendChild(message);
+  
+  scheduleBoxAlignment();
+  
 }
 
 function renderMenu(k, err, d){
@@ -954,6 +960,9 @@ function renderMenu(k, err, d){
 
   var now = toRome(new Date().getTime());
   setText($("menuStatus"), "Caricato alle " + p2(now.getUTCHours()) + ":" + p2(now.getUTCMinutes()));
+
+  scheduleBoxAlignment();
+  
 }
 
 
@@ -978,6 +987,8 @@ function alignBottomBoxes(){
 
   if(leftBoxes.length < 2 || rightBoxes.length < 2) return;
 
+  var upperLeft = leftBoxes[0];
+  var upperRight = rightBoxes[0];
   var lowerLeft = leftBoxes[1];
   var lowerRight = rightBoxes[1];
 
@@ -986,21 +997,30 @@ function alignBottomBoxes(){
 
   if(window.innerWidth <= 560) return;
 
-  var heightLeft = lowerLeft.offsetHeight;
-  var heightRight = lowerRight.offsetHeight;
+  var totalLeft = upperLeft.offsetHeight + lowerLeft.offsetHeight;
+  var totalRight = upperRight.offsetHeight + lowerRight.offsetHeight;
 
-  var target = Math.max(heightLeft, heightRight);
+  var target = Math.max(totalLeft, totalRight);
 
-  lowerLeft.style.minHeight = target + "px";
-  lowerRight.style.minHeight = target + "px";
+  lowerLeft.style.minHeight =
+    (target - upperLeft.offsetHeight) + "px";
+
+  lowerRight.style.minHeight =
+    (target - upperRight.offsetHeight) + "px";
+}
+
+function scheduleBoxAlignment(){
+  setTimeout(alignBottomBoxes, 100);
 }
 
 window.onresize = function(){
   alignBottomBoxes();
 };
 
+
 window.setTimeout(alignBottomBoxes, 500);
 window.setTimeout(alignBottomBoxes, 2000);
+
 </script>
 </body>
 </html>
