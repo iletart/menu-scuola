@@ -699,11 +699,22 @@ function collectMenu(d){
 }
 
 function selectMenu(k){ menuSel = k; updateMenuButtons(); loadMenu(); }
+
 function updateMenuButtons(){
   var ks = ["ieri", "oggi", "domani"], i;
   for(i = 0; i < ks.length; i++){ $("mb-" + ks[i]).className = (ks[i] === menuSel) ? "sel" : ""; }
 }
+
+
 function loadMenu(){
+  var now = toRome(new Date().getTime());
+  var day = now.getUTCDay();
+
+  if(day === 0 || day === 6){
+    renderMenuWeekend();
+    return;
+  }
+
   var k = menuSel;
   setText($("menuStatus"), "Caricamento...");
   getJson([CONFIG.base + MENUF[k], MENUF[k]], function(err, d){
@@ -711,20 +722,84 @@ function loadMenu(){
     safe(function(){ renderMenu(k, err, d); });
   });
 }
+
+function renderMenuWeekend(){
+  var phrases = [
+    "Evviva! Oggi niente scuola: si gioca!",
+    "Sabato: missione divertimento attivata!",
+    "Domenica: vietato svegliarsi di fretta!",
+    "Oggi il menu prevede giochi, risate e coccole!",
+    "La scuola riposa, i bambini no!",
+    "Weekend! Due giorni da piccoli campioni!",
+    "Oggi la maestra è in vacanza… e anche noi!",
+    "Niente mensa: oggi comanda la fantasia!",
+    "Attenzione: piccolo esploratore in libertà!",
+    "Oggi si mangia, si gioca e si fa festa!",
+    "Weekend: abbracci extra e compiti zero!",
+    "La scuola può aspettare: oggi si fa baldoria!"
+  ];
+
+  var list = $("menuList");
+  clear(list);
+
+  setText($("menuDate"), "");
+  setText($("menuStatus"), "");
+
+  var buttons = ["mb-ieri", "mb-oggi", "mb-domani", "mb-refresh"];
+  var i, el;
+
+  for(i = 0; i < buttons.length; i++){
+    el = $(buttons[i]);
+    if(el){ el.style.display = "none"; }
+  }
+
+  var phrase = phrases[Math.floor(Math.random() * phrases.length)];
+  var message = mk("div", "", phrase);
+  message.style.textAlign = "center";
+  message.style.fontWeight = "bold";
+  message.style.padding = "18px 4px";
+
+  list.appendChild(message);
+}
+
 function renderMenu(k, err, d){
   var list = $("menuList"), i;
   clear(list);
+
   var label = fullDateText(todayNum() + MENUOFF[k]);
   setText($("menuDate"), label);
-  if(err){ setText(list, "Menu non disponibile."); setText($("menuStatus"), "File non raggiungibile."); return; }
+
+  var buttons = ["mb-ieri", "mb-oggi", "mb-domani", "mb-refresh"];
+  for(i = 0; i < buttons.length; i++){
+    var el = $(buttons[i]);
+    if(el){ el.style.display = ""; }
+  }
+
+  if(err){
+    setText(list, "Menu non disponibile.");
+    setText($("menuStatus"), "File non raggiungibile.");
+    return;
+  }
+
   var dishes = collectMenu(d);
-  if(!dishes.length){ setText(list, "Menu non disponibile per questo giorno."); setText($("menuStatus"), ""); return; }
+  if(!dishes.length){
+    setText(list, "Menu non disponibile per questo giorno.");
+    setText($("menuStatus"), "");
+    return;
+  }
+
   var ul = mk("ul");
-  for(i = 0; i < dishes.length; i++){ ul.appendChild(mk("li", "", dishes[i])); }
+  for(i = 0; i < dishes.length; i++){
+    ul.appendChild(mk("li", "", dishes[i]));
+  }
+
   list.appendChild(ul);
+
   var now = toRome(new Date().getTime());
   setText($("menuStatus"), "Caricato alle " + p2(now.getUTCHours()) + ":" + p2(now.getUTCMinutes()));
 }
+
+
 function menuLoop(){ loadMenu(); setTimeout(function(){ safe(menuLoop); }, CONFIG.menuMin * 60000); }
 
 /* ===== AVVIO: ogni blocco è indipendente ===== */
