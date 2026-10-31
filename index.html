@@ -44,18 +44,21 @@ h3{
 }
 
 .row{
-  display:flex;
-  align-items:stretch;
-  margin:0
+  display:block;
+  margin:0;
+}
+
+.row:after{
+  content:"";
+  display:table;
+  clear:both;
 }
 
 .col{
-  float:none;
+  float:left;
   width:50%;
   min-width:0;
   box-sizing:border-box;
-  display:flex;
-  flex-direction:column
 }
 
 #clock{
@@ -170,7 +173,6 @@ li{margin:3px 0}
   }
 
   .col{
-    display:block;
     float:none;
     width:100%
   }
