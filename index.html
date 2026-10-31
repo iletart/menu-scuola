@@ -298,12 +298,7 @@ li{margin:3px 0}
 
 <div class="col">
     <div class="box">
-      <h2 id="taskDateTitle">Task del ...</h2>
-    </div>
-
-<div class="col">
-    <div class="box">
-      <h2 id="taskDateTitle">Task del ...</h2>
+      <h2 id="taskDateTitle">Task</h2>
 
       <div id="taskDayButtons">
         <button type="button" id="tb-ieri">Ieri</button>
@@ -1036,13 +1031,19 @@ function todoRequest(method, data, callback){
 }
 
 function todoConnect(){
-  var pinInput = $("todoPinInput");
-  var pin = pinInput ? pinInput.value : "";
+	var pinInput = $("todoPinInput");
+	var pin = pinInput ? pinInput.value : "";
 
-  if(!pin){
-    setText($("todoStatus"), "Inserisci il PIN.");
-    return;
-  }
+	if(!pin){
+	  try {
+		pin = window.localStorage.getItem("todoPin") || "";
+	  } catch(e) {}
+	}
+
+	if(!pin){
+	  setText($("todoStatus"), "Inserisci il PIN.");
+	  return;
+	}
 
   todoPin = pin;
   todoBusy = true;
@@ -1055,6 +1056,10 @@ function todoConnect(){
 	if(err || !data || !data.items){
 	  todoConnected = false;
 	  todoPin = "";
+	  
+	    try {
+		window.localStorage.removeItem("todoPin");
+	  } catch(e) {}
 
 	  var detail = data && data.detail ? data.detail : "";
 
@@ -1068,8 +1073,12 @@ function todoConnect(){
 	  return;
 	}
 
-    todoItems = data.items;
-    todoConnected = true;
+	todoItems = data.items;
+	todoConnected = true;
+
+	try {
+	  window.localStorage.setItem("todoPin", todoPin);
+	} catch(e) {}
 
     renderTodo();
     setText($("todoStatus"), "Lista sincronizzata.");
@@ -1283,8 +1292,19 @@ function loadTodo(){
       todoConnect();
     }
   };
+  
+	var savedPin = "";
 
-  setText(st, "Inserisci il PIN per caricare la lista condivisa.");
+	try {
+	  savedPin = window.localStorage.getItem("todoPin") || "";
+	} catch(e) {}
+
+	if(savedPin){
+	  pinInput.value = savedPin;
+	  todoConnect();
+	} else {
+	  setText(st, "Inserisci il PIN per caricare la lista condivisa.");
+	}
 }
 
 /* ===== TASK GIORNALIERI ===== */
