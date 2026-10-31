@@ -38,6 +38,10 @@ h3{font-size:1em;margin:8px 0 2px 0;text-transform:capitalize}
   flex-direction:column;
 }
 
+.col>.box{
+  flex:none;
+}
+
 @media (max-width:560px){
   .row{
     display:block;
@@ -45,23 +49,33 @@ h3{font-size:1em;margin:8px 0 2px 0;text-transform:capitalize}
 
   .col{
     display:block;
+    float:none;
     width:100%;
+  }
+
+  #clock{
+    font-size:2.8em;
   }
 }
 
-.weekend-message{
-  text-align:left;
-  font-weight:bold;
-  padding:18px 4px;
+#clock{
+	float:left;font-size:3.2em;font-weight:bold;line-height:1;margin-right:16px
 }
 
-.cf:after{content:"";display:block;clear:both}
+#info{
+	overflow:hidden
+}
 
-#clock{float:left;font-size:3.2em;font-weight:bold;line-height:1;margin-right:16px}
-#info{overflow:hidden}
-#wday{font-size:1.5em;font-weight:bold;text-transform:capitalize}
-#fulldate{font-size:1.2em}
-#weather{margin-top:4px;font-size:1.1em}
+#wday{
+	font-size:1.5em;font-weight:bold;text-transform:capitalize
+}
+#fulldate{
+	font-size:1.2em
+}
+
+#weather{
+	margin-top:4px;font-size:1.1em
+}
 
 .ev{margin:2px 0}
 .t{display:inline-block;width:5.2em;font-weight:bold;vertical-align:top}
@@ -118,35 +132,38 @@ li{margin:3px 0}
 </div>
 
 <div class="row cf">
-  <div class="col"><div class="box">
-    <h2 id="agendaTitle">Agenda famiglia</h2>
-    <div id="agenda">Caricamento...</div>
-    <div class="small" id="agendaStatus"></div>
-  </div></div>
-  <div class="col"><div class="box">
-    <h2>Da fare</h2>
-    <div id="todoCtl"></div>
-    <div id="todoList"></div>
-    <div class="small" id="todoStatus"></div>
-  </div></div>
-
-</div>
-
-<div class="row cf">
-  <div class="col"><div class="box">
-    <h2>Spostamenti</h2>
-    <div id="routes"></div>
-    <div class="small" id="routesStatus"></div>
-  </div></div>
-  <div class="col"><div class="box">
-    <h2>Menu scuola</h2>
-    <div>
-      <button id="mb-ieri" onclick="selectMenu('ieri')">Ieri</button><button id="mb-oggi" class="sel" onclick="selectMenu('oggi')">Oggi</button><button id="mb-domani" onclick="selectMenu('domani')">Domani</button><button id="mb-refresh" onclick="loadMenu()" title="Aggiorna menu" aria-label="Aggiorna menu">&#8635;</button>
+  <div class="col">
+    <div class="box">
+      <h2 id="agendaTitle">Agenda famiglia</h2>
+      <div id="agenda">Caricamento...</div>
+      <div class="small" id="agendaStatus"></div>
     </div>
-    <h3 id="menuDate"></h3>
-    <div id="menuList"></div>
-    <div class="small" id="menuStatus"></div>
-  </div></div>
+
+    <div class="box">
+      <h2>Spostamenti</h2>
+      <div id="routes"></div>
+      <div class="small" id="routesStatus"></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="box">
+      <h2>Da fare</h2>
+      <div id="todoCtl"></div>
+      <div id="todoList"></div>
+      <div class="small" id="todoStatus"></div>
+    </div>
+
+    <div class="box">
+      <h2>Menu scuola</h2>
+      <div>
+        <button id="mb-ieri" onclick="selectMenu('ieri')">Ieri</button><button id="mb-oggi" class="sel" onclick="selectMenu('oggi')">Oggi</button><button id="mb-domani" onclick="selectMenu('domani')">Domani</button><button id="mb-refresh" onclick="loadMenu()" title="Aggiorna menu" aria-label="Aggiorna menu">&#8635;</button>
+      </div>
+      <h3 id="menuDate"></h3>
+      <div id="menuList"></div>
+      <div class="small" id="menuStatus"></div>
+    </div>
+  </div>
 </div>
 
 <div id="err"></div>
