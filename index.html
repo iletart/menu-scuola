@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard famiglia</title>
+<style>
+html,body{margin:0;padding:0}
+body{background:#fff;color:#111;font-family:"Trebuchet MS",Arial,sans-serif;font-size:16px;line-height:1.3}
+body.k{font-size:20px}
+.wrap{padding:4px}
+.box{border:1px solid #000;padding:8px;margin:6px 3px;overflow:hidden;-webkit-box-sizing:border-box;box-sizing:border-box}
+h2{font-size:1.05em;margin:0 0 6px 0;padding:0 0 3px 0;border-bottom:2px solid #000;text-transform:uppercase}
+h3{font-size:1em;margin:8px 0 2px 0;text-transform:capitalize}
+.row{margin:0}
+.col{float:left;width:50%;-webkit-box-sizing:border-box;box-sizing:border-box}
+.cf:after{content:"";display:block;clear:both}
+#clock{float:left;font-size:3.2em;font-weight:bold;line-height:1;margin-right:16px}
+#info{overflow:hidden}
+#wday{font-size:1.5em;font-weight:bold;text-transform:capitalize}
+#fulldate{font-size:1.2em}
+#weather{margin-top:4px;font-size:1.1em}
+.ev{margin:2px 0}
+.t{display:inline-block;width:5.2em;font-weight:bold;vertical-align:top}
+.tt{display:inline-block;vertical-align:top}
+.small{font-size:.8em;color:#333;margin-top:6px}
+.rt{margin:0 0 10px 0}
+button{font-family:inherit;font-size:1em;border:1px solid #000;background:#fff;color:#000;padding:4px 10px;margin:2px 4px 2px 0}
+button.sel{background:#000;color:#fff}
+input{font-family:inherit;font-size:1em;border:1px solid #000;padding:4px;width:60%;-webkit-box-sizing:border-box;box-sizing:border-box}
+.todo{margin:3px 0}
+.done{text-decoration:line-through}
+ul{margin:4px 0 4px 20px;padding:0}
+li{margin:3px 0}
+#err{color:#000;font-size:.8em;margin:4px 3px}
+@media (max-width:560px){.col{float:none;width:100%}#clock{font-size:2.8em}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="box cf" id="head">
+  <div id="clock">--:--</div>
+  <div id="info">
+    <div id="wday"></div>
+    <div id="fulldate"></div>
+    <div id="weather">Meteo: caricamento...</div>
+  </div>
+</div>
+
+<div class="row cf">
+  <div class="col"><div class="box">
+    <h2>Agenda famiglia</h2>
+    <div id="agenda">Caricamento...</div>
+    <div class="small" id="agendaStatus"></div>
+  </div></div>
+  <div class="col"><div class="box">
+    <h2>Spostamenti</h2>
+    <div id="routes"></div>
+    <div class="small" id="routesStatus"></div>
+  </div></div>
+</div>
+
+<div class="row cf">
+  <div class="col"><div class="box">
+    <h2>Da fare</h2>
+    <div id="todoCtl"></div>
+    <div id="todoList"></div>
+    <div class="small" id="todoStatus"></div>
+  </div></div>
+  <div class="col"><div class="box">
+    <h2>Menu scuola</h2>
+    <div>
+      <button id="mb-ieri" onclick="selectMenu('ieri')">Ieri</button><button id="mb-oggi" class="sel" onclick="selectMenu('oggi')">Oggi</button><button id="mb-domani" onclick="selectMenu('domani')">Domani</button><button id="mb-refresh" onclick="loadMenu()">Aggiorna</button>
+    </div>
+    <h3 id="menuDate"></h3>
+    <div id="menuList"></div>
+    <div class="small" id="menuStatus"></div>
+  </div></div>
+</div>
+
+<div id="err"></div>
+</div>
+
+<script>
+/* ===== CONFIGURAZIONE ===== */
+var CONFIG = {
+  base: "https://raw.githubusercontent.com/iletart/menu-scuola/main/",
+  lat: 45.484, lon: 9.233,          /* Milano - Lambrate */
+  agendaMin: 30, weatherMin: 15, menuMin: 60,
+  todoUrl: "",    /* JSON pubblico della lista (sola lettura), vuoto = non configurato */
+  routesUrl: ""   /* JSON pubblico con i tempi di percorrenza, vuoto = non configurato */
+};
+var MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+var GIORNI = ["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
+
+/* ===== UTILITÀ ===== */
+function $(id){ return document.getElementById(id); }
+function clear(el){ while(el.firstChild){ el.removeChild(el.firstChild); } }
+function setText(el, t){ if(!el){ return; } clear(el); el.appendChild(document.createTextNode(t)); }
+function mk(tag, cls, txt){
+  var e = document.createElement(tag);
+  if(cls){ e.className = cls; }
+  if(txt !== undefined && txt !== null){ e.appendChild(document.createTextNode(txt)); }
+  return e;
+}
+function p2(n){ return (n < 10 ? "0" : "") + n; }
+function showErr(m){ var e = $("err"); if(e){ e.appendChild(mk("div", "", "Errore: " + m)); } }
+function safe(f){ try{ f(); }catch(e){ showErr(e && e.message ? e.message : String(e)); } }
+window.onerror = function(m, u, l){ showErr(m + " (riga " + l + ")"); return true; };
+
+var IS_KINDLE = (function(){
+  var q = window.location.search;
+  if(q.indexOf("kindle=1") >= 0){ return true; }
+  if(q.indexOf("kindle=0") >= 0){ return false; }
+  return /Kindle|Silk|KF[A-Z]{2,5}/i.test(navigator.userAgent);
+})();
+
+function parseJson(t){
+  if(typeof JSON !== "undefined" && JSON.parse){ return JSON.parse(t); }
+  return eval("(" + t + ")");
+}
+
+/* GET JSON con XMLHttpRequest, prova gli URL in ordine (fallback) */
+function getJson(urls, cb, nocb){
+  var i = 0;
+  function next(){
+    if(i >= urls.length){ cb("non raggiungibile", null); return; }
+    var u = urls[i++];
+    if(!nocb){ u += (u.indexOf("?") < 0 ? "?" : "&") + "t=" + (new Date().getTime()); }
+    var x, done = false, timer;
+    try{ x = new XMLHttpRequest(); }catch(e){ next(); return; }
+    function fin(ok, d){
+      if(done){ return; }
+      done = true; clearTimeout(timer);
+      if(ok){ cb(null, d); } else { next(); }
+    }
+    timer = setTimeout(function(){ try{ x.abort(); }catch(e){} fin(false); }, 20000);
+    x.onreadystatechange = function(){
+      if(x.readyState !== 4 || done){ return; }
+      if(x.status === 200){
+        var d;
+        try{ d = parseJson(x.responseText); }catch(e){ fin(false); return; }
+        fin(true, d);
+      } else { fin(false); }
+    };
+    try{ x.open("GET", u, true); x.send(null); }catch(e){ fin(false); }
+  }
+  next();
+}
+
+/* ===== DATE: UTC -> Europe/Rome senza Intl (ora legale automatica) ===== */
+function lastSunday1UTC(year, month0){
+  var last = new Date(Date.UTC(year, month0 + 1, 0));
+  return Date.UTC(year, month0, last.getUTCDate() - last.getUTCDay(), 1, 0, 0);
+}
+function romeOffsetHours(ms){
+  var y = new Date(ms).getUTCFullYear();
+  return (ms >= lastSunday1UTC(y, 2) && ms < lastSunday1UTC(y, 9)) ? 2 : 1;
+}
+/* restituisce una Date i cui campi getUTC* sono l'ora locale di Roma */
+function toRome(ms){ return new Date(ms + romeOffsetHours(ms) * 3600000); }
+function dayNum(y, m0, d){ return Math.round(Date.UTC(y, m0, d) / 86400000); }
+function dayNumOfRome(r){ return dayNum(r.getUTCFullYear(), r.getUTCMonth(), r.getUTCDate()); }
+function dateOfDayNum(n){ return new Date(n * 86400000); }
+function fullDateText(n){
+  var d = dateOfDayNum(n);
+  return GIORNI[d.getUTCDay()] + " " + d.getUTCDate() + " " + MESI[d.getUTCMonth()];
+}
+
+/* Parser ISO 8601 manuale (Z, +hh:mm, frazioni di secondo). Ritorna ms UTC o null */
+function parseIso(s){
+  if(typeof s !== "string"){ return null; }
+
+  var m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?\s*(Z|[+-]\d{2}:?\d{2})?$/.exec(s);
+
+  if(!m){ return null; }
+
+  var ms = Date.UTC(
+    +m[1], +m[2] - 1, +m[3],
+    +m[4], +m[5], m[6] ? +m[6] : 0
+  );
+
+  var z = m[7];
+
+  if(z && z !== "Z"){
+    var sign = z.charAt(0) === "-" ? -1 : 1;
+    var digits = z.replace(/[^0-9]/g, "");
+
+    ms -= sign * (
+      parseInt(digits.substr(0, 2), 10) * 60 +
+      parseInt(digits.substr(2, 2), 10)
+    ) * 60000;
+  }
+
+  return ms;
+}
+
+function dateOnlyNum(s){
+  var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s));
+  return m ? dayNum(+m[1], +m[2] - 1, +m[3]) : null;
+}
+function hhmmRome(ms){ var r = toRome(ms); return p2(r.getUTCHours()) + ":" + p2(r.getUTCMinutes()); }
+function todayNum(){ return dayNumOfRome(toRome(new Date().getTime())); }
+
+/* ===== OROLOGIO ===== */
+var lastDay = null;
+function updateClock(){
+  var now = new Date().getTime();
+  var r = toRome(now);
+  setText($("clock"), p2(r.getUTCHours()) + ":" + p2(r.getUTCMinutes()));
+  setText($("wday"), GIORNI[r.getUTCDay()]);
+  setText($("fulldate"), r.getUTCDate() + " " + MESI[r.getUTCMonth()] + " " + r.getUTCFullYear());
+  var dn = dayNumOfRome(r);
+  if(lastDay !== null && dn !== lastDay){ safe(renderAgenda); safe(loadMenu); }
+  lastDay = dn;
+  setTimeout(function(){ safe(updateClock); }, 60000 - (now % 60000) + 500);
+}
+
+/* ===== AGENDA ===== */
+var agendaData = null, agendaErr = false;
+function loadAgenda(){
+  getJson([CONFIG.base + "agenda.json", "agenda.json"], function(err, d){
+    if(!err && d && d.events){ agendaData = d; agendaErr = false; } else { agendaErr = true; }
+    safe(renderAgenda);
+    setTimeout(function(){ safe(loadAgenda); }, CONFIG.agendaMin * 60000);
+  });
+}
+function dayLabel(n, today){
+  var base = fullDateText(n);
+  if(n === today){ return "Oggi - " + base; }
+  if(n === today + 1){ return "Domani - " + base; }
+  return base;
+}
+function cmpEv(a, b){ return a.key - b.key; }
+function renderAgenda(){
+  var box = $("agenda"), st = $("agendaStatus");
+  clear(box);
+  if(!agendaData){
+    setText(box, agendaErr ? "Agenda non disponibile (file non raggiungibile)." : "Caricamento...");
+    return;
+  }
+  var today = todayNum(), buckets = [], i, j, n;
+  for(i = 0; i < 7; i++){ buckets.push([]); }
+  var ev = agendaData.events || [];
+  for(i = 0; i < ev.length; i++){
+    var e = ev[i], title = e.title || "(senza titolo)";
+    if(e.all_day){
+      var sd = dateOnlyNum(e.start), ed = dateOnlyNum(e.end);
+      if(sd === null){ continue; }
+      var last = (ed !== null && ed > sd) ? ed - 1 : sd;
+      for(n = sd; n <= last; n++){
+        if(n >= today && n < today + 7){ buckets[n - today].push({key: -1, time: "Tutto il giorno", title: title}); }
+      }
+    } else {
+      var ms = parseIso(e.start);
+      if(ms === null){ continue; }
+      n = dayNumOfRome(toRome(ms));
+      if(n >= today && n < today + 7){ buckets[n - today].push({key: ms, time: hhmmRome(ms), title: title}); }
+    }
+  }
+  var any = false;
+  for(i = 0; i < 7; i++){
+    if(!buckets[i].length){ continue; }
+    any = true;
+    buckets[i].sort(cmpEv);
+    box.appendChild(mk("h3", "", dayLabel(today + i, today)));
+    for(j = 0; j < buckets[i].length; j++){
+      var row = mk("div", "ev");
+      row.appendChild(mk("span", "t", buckets[i][j].time === "Tutto il giorno" ? "Tutto il giorno" : buckets[i][j].time));
+      row.appendChild(mk("span", "tt", buckets[i][j].title));
+      box.appendChild(row);
+    }
+  }
+  if(!any){ setText(box, "Nessun impegno nei prossimi 7 giorni."); }
+  var gen = parseIso(agendaData.generated_at), txt = "";
+  if(gen !== null){
+    txt = "Agenda aggiornata alle " + hhmmRome(gen);
+    if(new Date().getTime() - gen > 3 * 3600000){ txt += " (dati vecchi)"; }
+  }
+  if(agendaErr){ txt += " - rete non disponibile, mostro gli ultimi dati"; }
+  setText(st, txt);
+}
+
+/* ===== METEO (Open-Meteo, nessuna chiave) ===== */
+var wData = null, wTime = 0, wErr = false;
+function wcText(c){
+  if(c === 0){ return "Sereno"; }
+  if(c === 1){ return "Prevalentemente sereno"; }
+  if(c === 2){ return "Parzialmente nuvoloso"; }
+  if(c === 3){ return "Coperto"; }
+  if(c === 45 || c === 48){ return "Nebbia"; }
+  if(c >= 51 && c <= 57){ return "Pioggerella"; }
+  if(c >= 61 && c <= 67){ return "Pioggia"; }
+  if(c >= 71 && c <= 77){ return "Neve"; }
+  if(c >= 80 && c <= 82){ return "Rovesci"; }
+  if(c === 85 || c === 86){ return "Rovesci di neve"; }
+  if(c >= 95){ return "Temporale"; }
+  return "Meteo variabile";
+}
+function loadWeather(){
+  var u = "https://api.open-meteo.com/v1/forecast?latitude=" + CONFIG.lat + "&longitude=" + CONFIG.lon +
+          "&current=temperature_2m,apparent_temperature,weather_code&timezone=Europe%2FRome";
+  getJson([u], function(err, d){
+    if(!err && d && d.current && typeof d.current.temperature_2m === "number"){ wData = d.current; wTime = new Date().getTime(); wErr = false; }
+    else { wErr = true; }
+    safe(renderWeather);
+    setTimeout(function(){ safe(loadWeather); }, CONFIG.weatherMin * 60000);
+  }, true);
+}
+function renderWeather(){
+  var el = $("weather");
+  if(!wData){ setText(el, "Meteo non disponibile"); return; }
+  var t = "Milano: " + Math.round(wData.temperature_2m) + "°C, " + wcText(wData.weather_code);
+  if(typeof wData.apparent_temperature === "number"){ t += " (percepita " + Math.round(wData.apparent_temperature) + "°C)"; }
+  if(wErr){ t += " - ultimo dato delle " + hhmmRome(wTime); }
+  setText(el, t);
+}
+
+/* ===== SPOSTAMENTI ===== */
+var ROUTES = [
+  {id: "mattina", ora: "07:45", da: "Ronchi 3, Milano", a: "Via della Unione Europea 3B, San Donato Milanese"},
+  {id: "pomeriggio", ora: "13:45", da: "Via della Unione Europea 3B, San Donato Milanese", a: "Via Tommaso Pini 2, Milano"}
+];
+var routesData = null, routesErr = false;
+function loadRoutes(){
+  if(!CONFIG.routesUrl){ renderRoutes(); return; }
+  getJson([CONFIG.routesUrl], function(err, d){
+    if(!err && d && d.routes){ routesData = d; routesErr = false; } else { routesErr = true; }
+    safe(renderRoutes);
+    setTimeout(function(){ safe(loadRoutes); }, 15 * 60000);
+  });
+}
+function renderRoutes(){
+  var box = $("routes"), i, j;
+  clear(box);
+  for(i = 0; i < ROUTES.length; i++){
+    var r = ROUTES[i], d = mk("div", "rt");
+    d.appendChild(mk("div", "", "Ore " + r.ora));
+    d.firstChild.style.fontWeight = "bold";
+    d.appendChild(mk("div", "", "Da: " + r.da));
+    d.appendChild(mk("div", "", "A: " + r.a));
+    var tempo = "Tempo: non disponibile", rr = routesData ? routesData.routes : null;
+    if(rr){
+      for(j = 0; j < rr.length; j++){
+        if(rr[j].id === r.id && typeof rr[j].minutes === "number"){ tempo = "Tempo stimato: " + rr[j].minutes + " min"; }
+      }
+    }
+    d.appendChild(mk("div", "", tempo));
+    box.appendChild(d);
+  }
+  var st = "";
+  if(!CONFIG.routesUrl){ st = "Servizio non ancora configurato: i tempi di percorrenza (Google Maps) non sono attivi."; }
+  else if(routesData && routesData.generated_at){
+    var g = parseIso(routesData.generated_at);
+    if(g !== null){ st = "Aggiornato alle " + hhmmRome(g); }
+    if(routesErr){ st += " - rete non disponibile"; }
+  } else if(routesErr){ st = "Tempi non raggiungibili."; }
+  setText($("routesStatus"), st);
+}
+
+/* ===== LISTA DA FARE ===== */
+var todoItems = [], todoRemote = false;
+function todoCanEdit(){ return !IS_KINDLE && !CONFIG.todoUrl; }
+function todoLoadLocal(){
+  try{ var s = window.localStorage.getItem("dashTodo"); todoItems = s ? parseJson(s) : []; }catch(e){ todoItems = []; }
+}
+function todoSave(){
+  try{ window.localStorage.setItem("dashTodo", JSON.stringify(todoItems)); }catch(e){ showErr("salvataggio lista non riuscito"); }
+}
+function todoAdd(){
+  var inp = $("todoInput"), v = inp.value.replace(/^\s+|\s+$/g, "");
+  if(!v){ return; }
+  todoItems.push({text: v, done: false});
+  inp.value = ""; todoSave(); renderTodo();
+}
+function todoToggle(i){ todoItems[i].done = !todoItems[i].done; todoSave(); renderTodo(); }
+function todoDel(i){ todoItems.splice(i, 1); todoSave(); renderTodo(); }
+function renderTodo(){
+  var box = $("todoList"), i;
+  clear(box);
+  for(i = 0; i < todoItems.length; i++){
+    box.appendChild(todoRow(i));
+  }
+  if(!todoItems.length){ box.appendChild(mk("div", "", "Nessuna attività.")); }
+}
+function todoRow(i){
+  var it = todoItems[i], row = mk("div", "todo");
+  if(todoCanEdit()){
+    var b = mk("button", "", it.done ? "[x]" : "[ ]");
+    b.onclick = function(){ todoToggle(i); };
+    var del = mk("button", "", "X");
+    del.onclick = function(){ todoDel(i); };
+    row.appendChild(b);
+    row.appendChild(mk("span", it.done ? "done" : "", it.text));
+    row.appendChild(document.createTextNode(" "));
+    row.appendChild(del);
+  } else {
+    row.appendChild(mk("span", it.done ? "done" : "", (it.done ? "[x] " : "[ ] ") + it.text));
+  }
+  return row;
+}
+function loadTodo(){
+  var ctl = $("todoCtl"), st = $("todoStatus");
+  if(CONFIG.todoUrl){
+    getJson([CONFIG.todoUrl], function(err, d){
+      if(!err && d && d.items){ todoItems = d.items; renderTodo(); setText(st, "Lista sincronizzata (sola lettura)."); }
+      else { setText(st, "Lista non raggiungibile."); }
+      setTimeout(function(){ safe(loadTodo); }, CONFIG.agendaMin * 60000);
+    });
+    return;
+  }
+  if(IS_KINDLE){
+    setText($("todoList"), "Lista non disponibile sul Kindle.");
+    setText(st, "La sincronizzazione con il telefono non è ancora attiva.");
+    return;
+  }
+  todoLoadLocal();
+  var inp = mk("input"); inp.id = "todoInput"; inp.type = "text"; inp.maxLength = 120;
+  inp.onkeydown = function(ev){ ev = ev || window.event; if(ev.keyCode === 13){ todoAdd(); } };
+  var add = mk("button", "", "Aggiungi"); add.onclick = todoAdd;
+  ctl.appendChild(inp); ctl.appendChild(document.createTextNode(" ")); ctl.appendChild(add);
+  renderTodo();
+  setText(st, "Lista salvata solo su questo dispositivo. Sincronizzazione col Kindle non ancora attiva.");
+}
+
+/* ===== MENU SCUOLA ===== */
+var MENUF = {ieri: "menu-ieri.json", oggi: "menu.json", domani: "menu-domani.json"};
+var MENUOFF = {ieri: -1, oggi: 0, domani: 1};
+var menuSel = "oggi";
+var SKIP = /^(date|data|giorno|day|id|generated_at|updated|updated_at|url|link|scuola|school|centro|center|plesso|sede|nome_scuola|nome_centro)$/i;
+function collectMenu(d){
+  var out = [];
+  if(!d || !d.plates){ return out; }
+
+  for(var i = 0; i < d.plates.length; i++){
+    var p = d.plates[i];
+
+    if(typeof p === "string"){
+      if(p){ out.push(p); }
+    } else if(p){
+      var name = p.name || p.description;
+      if(name){ out.push(name); }
+    }
+  }
+
+  return out;
+}
+
+function selectMenu(k){ menuSel = k; updateMenuButtons(); loadMenu(); }
+function updateMenuButtons(){
+  var ks = ["ieri", "oggi", "domani"], i;
+  for(i = 0; i < ks.length; i++){ $("mb-" + ks[i]).className = (ks[i] === menuSel) ? "sel" : ""; }
+}
+function loadMenu(){
+  var k = menuSel;
+  setText($("menuStatus"), "Caricamento...");
+  getJson([CONFIG.base + MENUF[k], MENUF[k]], function(err, d){
+    if(k !== menuSel){ return; }
+    safe(function(){ renderMenu(k, err, d); });
+  });
+}
+function renderMenu(k, err, d){
+  var list = $("menuList"), i;
+  clear(list);
+  var label = fullDateText(todayNum() + MENUOFF[k]);
+  setText($("menuDate"), label);
+  if(err){ setText(list, "Menu non disponibile."); setText($("menuStatus"), "File non raggiungibile."); return; }
+  var dishes = collectMenu(d);
+  if(!dishes.length){ setText(list, "Menu non disponibile per questo giorno."); setText($("menuStatus"), ""); return; }
+  var ul = mk("ul");
+  for(i = 0; i < dishes.length; i++){ ul.appendChild(mk("li", "", dishes[i])); }
+  list.appendChild(ul);
+  var now = toRome(new Date().getTime());
+  setText($("menuStatus"), "Caricato alle " + p2(now.getUTCHours()) + ":" + p2(now.getUTCMinutes()));
+}
+function menuLoop(){ loadMenu(); setTimeout(function(){ safe(menuLoop); }, CONFIG.menuMin * 60000); }
+
+/* ===== AVVIO: ogni blocco è indipendente ===== */
+if(IS_KINDLE){ document.body.className = "k"; }
+safe(updateClock);
+safe(loadAgenda);
+safe(loadWeather);
+safe(loadRoutes);
+safe(loadTodo);
+safe(updateMenuButtons);
+safe(menuLoop);
+</script>
+</body>
+</html>
