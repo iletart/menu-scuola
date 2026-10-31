@@ -161,9 +161,19 @@ li{margin:3px 0}
     width:100%
   }
 
-  #clock{
-    font-size:2.8em
-  }
+	#clockWeather {
+	  float:left;
+	  clear:left;
+	  width:calc(3.2em * 1.5);
+	  text-align:center;
+	  font-size:1.5em;
+	  line-height:1.2;
+	  margin-top:4px;
+	}
+
+	#info {
+	  overflow:hidden;
+	}
 }
 </style>
 
@@ -173,6 +183,8 @@ li{margin:3px 0}
 
 <div class="box cf" id="head">
   <div id="clock">--:--</div>
+  <div id="clockWeather"></div>
+
   <div id="info">
     <div id="wday"></div>
     <div id="fulldate"></div>
@@ -231,19 +243,70 @@ var MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","ag
 var GIORNI = ["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
 
 /* ===== UTILITÀ ===== */
-function $(id){ return document.getElementById(id); }
-function clear(el){ while(el.firstChild){ el.removeChild(el.firstChild); } }
-function setText(el, t){ if(!el){ return; } clear(el); el.appendChild(document.createTextNode(t)); }
-function mk(tag, cls, txt){
+function $(id) {
+  return document.getElementById(id);
+}
+
+function clear(el) {
+  while (el.firstChild) {
+    el.removeChild(el.firstChild);
+  }
+}
+
+function setText(el, t) {
+  if (!el) {
+    return;
+  }
+
+  clear(el);
+  el.appendChild(document.createTextNode(t));
+}
+
+function mk(tag, cls, txt) {
   var e = document.createElement(tag);
-  if(cls){ e.className = cls; }
-  if(txt !== undefined && txt !== null){ e.appendChild(document.createTextNode(txt)); }
+
+  if (cls) {
+    e.className = cls;
+  }
+
+  if (txt !== undefined && txt !== null) {
+    e.appendChild(document.createTextNode(txt));
+  }
+
   return e;
 }
-function p2(n){ return (n < 10 ? "0" : "") + n; }
-function showErr(m){ var e = $("err"); if(e){ e.appendChild(mk("div", "", "Errore: " + m)); } }
-function safe(f){ try{ f(); }catch(e){ showErr(e && e.message ? e.message : String(e)); } }
-window.onerror = function(m, u, l){ showErr(m + " (riga " + l + ")"); return true; };
+
+function p2(n) {
+  return (n < 10 ? "0" : "") + n;
+}
+
+function showErr(m) {
+  var e = $("err");
+
+  if (e) {
+    e.appendChild(
+      mk("div", "", "Errore: " + m)
+    );
+  }
+}
+
+function safe(f) {
+  try {
+    f();
+  } catch (e) {
+    showErr(
+      e && e.message ? e.message : String(e)
+    );
+  }
+}
+
+window.onerror = function(m, u, l) {
+  showErr(
+    m + " (riga " + l + ")"
+  );
+
+  return true;
+};
 
 var IS_KINDLE = (function(){
   var q = window.location.search;
@@ -541,11 +604,13 @@ function loadWeather(){
   }, true);
 }
 
-function renderWeather(){
-  var el = document.getElementById("weather");
+function renderWeather() {
+  var el = $("weather");
+  var iconEl = $("clockWeather");
 
-  if(!wData){
+  if (!wData) {
     el.innerHTML = wErr ? "Meteo non disponibile" : "Meteo...";
+    iconEl.innerHTML = "";
     return;
   }
 
@@ -555,21 +620,22 @@ function renderWeather(){
 
   var icon = "🌤️";
 
-  if(code === 0) icon = "☀️";
-  else if(code === 1 || code === 2) icon = "⛅";
-  else if(code === 3) icon = "☁️";
-  else if(code === 45 || code === 48) icon = "🌫️";
-  else if(code >= 51 && code <= 57) icon = "🌦️";
-  else if(code >= 61 && code <= 67) icon = "🌧️";
-  else if(code >= 71 && code <= 77) icon = "❄️";
-  else if(code >= 80 && code <= 82) icon = "🌧️";
-  else if(code === 85 || code === 86) icon = "🌨️";
-  else if(code >= 95) icon = "⛈️";
+  if (code === 0) icon = "☀️";
+  else if (code === 1 || code === 2) icon = "⛅";
+  else if (code === 3) icon = "☁️";
+  else if (code === 45 || code === 48) icon = "🌫️";
+  else if (code >= 51 && code <= 57) icon = "🌦️";
+  else if (code >= 61 && code <= 67) icon = "🌧️";
+  else if (code >= 71 && code <= 77) icon = "❄️";
+  else if (code >= 80 && code <= 82) icon = "🌧️";
+  else if (code === 85 || code === 86) icon = "🌨️";
+  else if (code >= 95) icon = "⛈️";
+
+  iconEl.innerHTML = icon;
 
   el.innerHTML =
-    "<div style='font-size:1.5em; line-height:1.2;'>" + icon + "</div>" +
-    "<div>Milano: " + temp + "°C, " + wcText(code) + "</div>" +
-    "<div>Percepita: " + feels + "°C</div>" +
+    "Milano: " + temp + "°C, " + wcText(code) +
+    "<br>Percepita: " + feels + "°C" +
     (wErr ? "<div class='small'>Ultimo aggiornamento disponibile</div>" : "");
 }
 
