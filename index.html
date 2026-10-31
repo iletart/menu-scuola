@@ -296,7 +296,11 @@ li{margin:3px 0}
     </div>
   </div>
 
-  <div class="col">
+<div class="col">
+    <div class="box">
+      <h2 id="taskDateTitle">Task del ...</h2>
+    </div>
+
     <div class="box">
       <h2>Da fare</h2>
       <div id="todoCtl"></div>
@@ -927,6 +931,25 @@ function renderRoutes(){
 /* ===== FINE SPOSTAMENTI ===== */
 
 
+
+/* ===== LISTA DA FARE OGGI - SINCRONIZZATA ===== */
+
+function updateTaskDate(){
+  var giorni = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
+  var mesi = ["gen", "feb", "mar", "apr", "mag", "giu",
+              "lug", "ago", "set", "ott", "nov", "dic"];
+
+  var d = new Date();
+
+  var testo = "Task del " +
+    giorni[d.getDay()] + " " +
+    ("0" + d.getDate()).slice(-2) + " " +
+    mesi[d.getMonth()];
+
+  setText($("taskDateTitle"), testo);
+}
+
+updateTaskDate();
 
 
 /* ===== LISTA DA FARE - SINCRONIZZATA ===== */
