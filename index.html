@@ -207,7 +207,33 @@ input{
   box-sizing:border-box
 }
 
-.todo{margin:3px 0}
+.todo{
+  margin:3px 0;
+  display:block;
+  width:100%;
+  overflow:hidden;
+}
+
+.todo-text{
+  display:inline-block;
+  width:calc(100% - 65px);
+  vertical-align:middle;
+  word-wrap:break-word;
+}
+
+.todo-actions{
+  display:inline-block;
+  width:60px;
+  text-align:right;
+  vertical-align:middle;
+  white-space:nowrap;
+}
+
+.todo-actions button{
+  padding:2px;
+  margin-left:3px;
+  min-width:24px;
+}
 
 .done{text-decoration:line-through}
 
@@ -931,22 +957,43 @@ function renderTodo(){
   scheduleBoxAlignment();
   
 }
+
 function todoRow(i){
-  var it = todoItems[i], row = mk("div", "todo");
+  var it = todoItems[i];
+  var row = mk("div", "todo");
+
   if(todoCanEdit()){
-    var b = mk("button", "", it.done ? "[x]" : "[ ]");
-    b.onclick = function(){ todoToggle(i); };
-    var del = mk("button", "", "X");
-    del.onclick = function(){ todoDel(i); };
-    row.appendChild(b);
-    row.appendChild(mk("span", it.done ? "done" : "", it.text));
-    row.appendChild(document.createTextNode(" "));
-    row.appendChild(del);
+
+    var txt = mk("span", it.done ? "todo-text done" : "todo-text", it.text);
+    var actions = mk("span", "todo-actions");
+
+    var b = mk("button", "", "✓");
+    b.title = it.done ? "Segna come da fare" : "Segna come completata";
+    b.onclick = function(){
+      todoToggle(i);
+    };
+
+    var del = mk("button", "", "🗑");
+    del.title = "Elimina attività";
+    del.onclick = function(){
+      todoDel(i);
+    };
+
+    row.appendChild(txt);
+    actions.appendChild(b);
+    actions.appendChild(del);
+    row.appendChild(actions);
+
   } else {
-    row.appendChild(mk("span", it.done ? "done" : "", (it.done ? "[x] " : "[ ] ") + it.text));
+    row.appendChild(
+      mk("span", it.done ? "done" : "",
+      (it.done ? "✓ " : "○ ") + it.text)
+    );
   }
+
   return row;
 }
+
 function loadTodo(){
   var ctl = $("todoCtl"), st = $("todoStatus");
   if(CONFIG.todoUrl){
@@ -957,12 +1004,15 @@ function loadTodo(){
     });
     return;
   }
+  
   if(IS_KINDLE){
     setText($("todoList"), "Lista non disponibile sul Kindle.");
     setText(st, "La sincronizzazione con il telefono non è ancora attiva.");
     return;
   }
+  
   todoLoadLocal();
+  
   var inp = mk("input"); inp.id = "todoInput"; inp.type = "text"; inp.maxLength = 120;
   inp.onkeydown = function(ev){ ev = ev || window.event; if(ev.keyCode === 13){ todoAdd(); } };
   var add = mk("button", "", "Aggiungi"); add.onclick = todoAdd;
