@@ -325,7 +325,7 @@ var CONFIG = {
   base: "https://raw.githubusercontent.com/iletart/menu-scuola/main/",
   lat: 45.484, lon: 9.233,          /* Milano - Lambrate */
   agendaMin: 30, weatherMin: 15, menuMin: 60,
-  todoUrl: "",    /* JSON pubblico della lista (sola lettura), vuoto = non configurato */
+  todoWorkerUrl: "https://todo-sync.iletarta-633.workers.dev",    /* JSON pubblico della lista (sola lettura), vuoto = non configurato */
   routesUrl: "https://raw.githubusercontent.com/iletart/menu-scuola/main/routes.json"   /* JSON pubblico con i tempi di percorrenza, vuoto = non configurato */
 };
 var MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
@@ -928,98 +928,285 @@ function renderRoutes(){
 
 
 
-/* ===== LISTA DA FARE ===== */
-var todoItems = [], todoRemote = false;
-function todoCanEdit(){ return !IS_KINDLE && !CONFIG.todoUrl; }
-function todoLoadLocal(){
-  try{ var s = window.localStorage.getItem("dashTodo"); todoItems = s ? parseJson(s) : []; }catch(e){ todoItems = []; }
+
+/* ===== LISTA DA FARE - SINCRONIZZATA ===== */
+
+var todoItems = [];
+var todoPin = "";
+var todoConnected = false;
+var todoBusy = false;
+var todoPollTimer = null;
+
+function todoCanEdit(){
+  return todoConnected && !todoBusy;
 }
-function todoSave(){
-  try{ window.localStorage.setItem("dashTodo", JSON.stringify(todoItems)); }catch(e){ showErr("salvataggio lista non riuscito"); }
+
+function todoRequest(method, data, callback){
+  var x = new XMLHttpRequest();
+  var url = CONFIG.todoWorkerUrl;
+
+  x.open(method, url, true);
+  x.setRequestHeader("X-Todo-Pin", todoPin);
+
+  if(method === "POST"){
+    x.setRequestHeader("Content-Type", "application/json");
+  }
+
+  x.onreadystatechange = function(){
+    if(x.readyState !== 4) return;
+
+    var result = null;
+
+    try {
+      result = parseJson(x.responseText);
+    } catch(e) {}
+
+    if(x.status >= 200 && x.status < 300){
+      callback(null, result);
+    } else {
+      callback(
+        result && result.error ?
+          result.error :
+          "Errore HTTP " + x.status,
+        result
+      );
+    }
+  };
+
+  x.onerror = function(){
+    callback("Errore di connessione", null);
+  };
+
+  x.ontimeout = function(){
+    callback("Timeout di connessione", null);
+  };
+
+  x.timeout = 20000;
+
+  try {
+    x.send(method === "POST" ? JSON.stringify(data) : null);
+  } catch(e) {
+    callback("Errore di invio richiesta", null);
+  }
 }
+
+function todoConnect(){
+  var pinInput = $("todoPinInput");
+  var pin = pinInput ? pinInput.value : "";
+
+  if(!pin){
+    setText($("todoStatus"), "Inserisci il PIN.");
+    return;
+  }
+
+  todoPin = pin;
+  todoBusy = true;
+
+  setText($("todoStatus"), "Connessione in corso...");
+
+  todoRequest("GET", null, function(err, data){
+    todoBusy = false;
+
+    if(err || !data || !data.items){
+      todoConnected = false;
+      todoPin = "";
+      setText($("todoStatus"), "Connessione non riuscita: " + (err || "risposta non valida"));
+      return;
+    }
+
+    todoItems = data.items;
+    todoConnected = true;
+
+    renderTodo();
+    setText($("todoStatus"), "Lista sincronizzata.");
+
+    if(pinInput){
+      pinInput.style.display = "none";
+    }
+
+    var connectButton = $("todoConnectButton");
+    if(connectButton){
+      connectButton.style.display = "none";
+    }
+
+    todoSchedulePoll();
+  });
+}
+
+function todoSchedulePoll(){
+  if(todoPollTimer){
+    clearTimeout(todoPollTimer);
+  }
+
+  todoPollTimer = setTimeout(function(){
+    if(!todoConnected || todoBusy) {
+      todoSchedulePoll();
+      return;
+    }
+
+    todoRequest("GET", null, function(err, data){
+      if(!err && data && data.items){
+        todoItems = data.items;
+        renderTodo();
+        setText($("todoStatus"), "Lista sincronizzata.");
+      } else if(err) {
+        setText($("todoStatus"), "Sincronizzazione temporaneamente non disponibile.");
+      }
+
+      todoSchedulePoll();
+    });
+  }, 30000);
+}
+
+function todoChange(action, index, text){
+  if(!todoConnected || todoBusy) return;
+
+  var data = {
+    action: action
+  };
+
+  if(action === "add"){
+    data.text = text;
+  } else {
+    data.index = index;
+  }
+
+  todoBusy = true;
+  renderTodo();
+  setText($("todoStatus"), "Salvataggio...");
+
+  todoRequest("POST", data, function(err, result){
+    todoBusy = false;
+
+    if(err || !result || !result.items){
+      setText($("todoStatus"), "Salvataggio non riuscito: " + (err || "errore"));
+      renderTodo();
+      return;
+    }
+
+    todoItems = result.items;
+    renderTodo();
+    setText($("todoStatus"), "Lista sincronizzata.");
+  });
+}
+
 function todoAdd(){
-  var inp = $("todoInput"), v = inp.value.replace(/^\s+|\s+$/g, "");
-  if(!v){ return; }
-  todoItems.push({text: v, done: false});
-  inp.value = ""; todoSave(); renderTodo();
+  var inp = $("todoInput");
+  if(!inp) return;
+
+  var value = inp.value.replace(/^\s+|\s+$/g, "");
+
+  if(!value) return;
+
+  if(value.length > 200){
+    setText($("todoStatus"), "Massimo 200 caratteri.");
+    return;
+  }
+
+  todoChange("add", null, value);
+
+  inp.value = "";
 }
-function todoToggle(i){ todoItems[i].done = !todoItems[i].done; todoSave(); renderTodo(); }
-function todoDel(i){ todoItems.splice(i, 1); todoSave(); renderTodo(); }
+
+function todoToggle(i){
+  todoChange("toggle", i);
+}
+
+function todoDel(i){
+  todoChange("delete", i);
+}
 
 function renderTodo(){
-  var box = $("todoList"), i;
+  var box = $("todoList");
+  var i;
+
   clear(box);
+
   for(i = 0; i < todoItems.length; i++){
     box.appendChild(todoRow(i));
   }
-  if(!todoItems.length){ box.appendChild(mk("div", "", "Nessuna attività.")); }
-  
+
+  if(!todoItems.length){
+    box.appendChild(mk("div", "", "Nessuna attività."));
+  }
+
   scheduleBoxAlignment();
-  
 }
 
 function todoRow(i){
   var it = todoItems[i];
   var row = mk("div", "todo");
 
-  if(todoCanEdit()){
+  var txt = mk(
+    "span",
+    it.done ? "todo-text done" : "todo-text",
+    it.text
+  );
 
-    var txt = mk("span", it.done ? "todo-text done" : "todo-text", it.text);
+  row.appendChild(txt);
+
+  if(todoConnected){
     var actions = mk("span", "todo-actions");
 
     var b = mk("button", "", "✓");
+    b.type = "button";
+    b.disabled = todoBusy;
     b.title = it.done ? "Segna come da fare" : "Segna come completata";
+
     b.onclick = function(){
       todoToggle(i);
     };
 
     var del = mk("button", "", "🗑");
+    del.type = "button";
+    del.disabled = todoBusy;
     del.title = "Elimina attività";
+
     del.onclick = function(){
       todoDel(i);
     };
 
-    row.appendChild(txt);
     actions.appendChild(b);
     actions.appendChild(del);
     row.appendChild(actions);
-
-  } else {
-    row.appendChild(
-      mk("span", it.done ? "done" : "",
-      (it.done ? "✓ " : "○ ") + it.text)
-    );
   }
 
   return row;
 }
 
 function loadTodo(){
-  var ctl = $("todoCtl"), st = $("todoStatus");
-  if(CONFIG.todoUrl){
-    getJson([CONFIG.todoUrl], function(err, d){
-      if(!err && d && d.items){ todoItems = d.items; renderTodo(); setText(st, "Lista sincronizzata (sola lettura)."); }
-      else { setText(st, "Lista non raggiungibile."); }
-      setTimeout(function(){ safe(loadTodo); }, CONFIG.agendaMin * 60000);
-    });
-    return;
-  }
-  
-  if(IS_KINDLE){
-    setText($("todoList"), "Lista non disponibile sul Kindle.");
-    setText(st, "La sincronizzazione con il telefono non è ancora attiva.");
-    return;
-  }
-  
-  todoLoadLocal();
-  
-  var inp = mk("input"); inp.id = "todoInput"; inp.type = "text"; inp.maxLength = 120;
-  inp.onkeydown = function(ev){ ev = ev || window.event; if(ev.keyCode === 13){ todoAdd(); } };
-  var add = mk("button", "", "Aggiungi"); add.onclick = todoAdd;
-  ctl.appendChild(inp); ctl.appendChild(document.createTextNode(" ")); ctl.appendChild(add);
-  renderTodo();
-  setText(st, "Lista salvata solo su questo dispositivo. Sincronizzazione col Kindle non ancora attiva.");
+  var ctl = $("todoCtl");
+  var st = $("todoStatus");
+
+  clear(ctl);
+  clear($("todoList"));
+
+  var pinInput = mk("input");
+  pinInput.id = "todoPinInput";
+  pinInput.type = "password";
+  pinInput.maxLength = 50;
+  pinInput.placeholder = "PIN sincronizzazione";
+  pinInput.autocomplete = "off";
+
+  var connectButton = mk("button", "", "Connetti");
+  connectButton.id = "todoConnectButton";
+  connectButton.type = "button";
+  connectButton.onclick = todoConnect;
+
+  ctl.appendChild(pinInput);
+  ctl.appendChild(document.createTextNode(" "));
+  ctl.appendChild(connectButton);
+
+  pinInput.onkeydown = function(ev){
+    ev = ev || window.event;
+    if(ev.keyCode === 13){
+      todoConnect();
+    }
+  };
+
+  setText(st, "Inserisci il PIN per caricare la lista condivisa.");
 }
+
 
 /* ===== MENU SCUOLA ===== */
 var MENUF = {ieri: "menu-ieri.json", oggi: "menu.json", domani: "menu-domani.json"};
