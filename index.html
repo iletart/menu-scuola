@@ -89,7 +89,7 @@ var CONFIG = {
   lat: 45.484, lon: 9.233,          /* Milano - Lambrate */
   agendaMin: 30, weatherMin: 15, menuMin: 60,
   todoUrl: "",    /* JSON pubblico della lista (sola lettura), vuoto = non configurato */
-  routesUrl: ""   /* JSON pubblico con i tempi di percorrenza, vuoto = non configurato */
+  routesUrl: "https://raw.githubusercontent.com/iletart/menu-scuola/main/routes.json"   /* JSON pubblico con i tempi di percorrenza, vuoto = non configurato */
 };
 var MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
 var GIORNI = ["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
@@ -400,44 +400,127 @@ function renderWeather(){
 }
 
 /* ===== SPOSTAMENTI ===== */
+
+/* ===== SPOSTAMENTI ===== */
+
 var ROUTES = [
-  {id: "mattina", ora: "07:45", da: "Casa", a: "Lavoro"},
-  {id: "pomeriggio", ora: "16:45", da: "Lavoro", a: "Asilo"}
+  {id: "mattina", da: "Casa", a: "Lavoro"},
+  {id: "pomeriggio", da: "Lavoro", a: "Asilo"}
+];
+
+var WEEKEND_PHRASES = [
+  "Weekend! Oggi niente lavoro, goditi la giornata!",
+  "Traffico? Oggi non è un nostro problema!",
+  "Nessuna sveglia, nessuna partenza. Buon relax!",
+  "Oggi si viaggia solo per piacere!",
+  "Modalità relax attivata. Buon weekend!",
+  "Oggi l'unico appuntamento è con il tempo libero!"
 ];
 
 var routesData = null, routesErr = false;
+
 function loadRoutes(){
-  if(!CONFIG.routesUrl){ renderRoutes(); return; }
+  if(!CONFIG.routesUrl){
+    renderRoutes();
+    return;
+  }
+
   getJson([CONFIG.routesUrl], function(err, d){
-    if(!err && d && d.routes){ routesData = d; routesErr = false; } else { routesErr = true; }
+    if(!err && d && d.routes){
+      routesData = d;
+      routesErr = false;
+    } else {
+      routesErr = true;
+    }
+
     safe(renderRoutes);
     setTimeout(function(){ safe(loadRoutes); }, 15 * 60000);
   });
 }
 
 function renderRoutes(){
-  var box = $("routes"), i;
+  var box = $("routes");
+  var i, r, data, departure, calculated, today, line;
+
   clear(box);
 
+  var now = new Date();
+  var day = now.getDay();
+
+  /* Weekend */
+  if(day === 0 || day === 6){
+    var phrase = WEEKEND_PHRASES[
+      Math.floor(Math.random() * WEEKEND_PHRASES.length)
+    ];
+
+    box.appendChild(mk("div", "rt", phrase));
+    setText($("routesStatus"), "");
+    return;
+  }
+
+  /* Giorni feriali */
+  if(!CONFIG.routesUrl){
+    setText($("routesStatus"), "Tempi di percorrenza non ancora configurati.");
+    return;
+  }
+
+  today = now.getFullYear() + "-" +
+    p2(now.getMonth() + 1) + "-" +
+    p2(now.getDate());
+
   for(i = 0; i < ROUTES.length; i++){
-    var r = ROUTES[i];
-    var line = r.da + " \u2192 " + r.a + " (ore " + r.ora + ")";
+    r = ROUTES[i];
+    data = routesData && routesData.routes ?
+      routesData.routes[r.id] : null;
+
+    if(!data || !data.departure || !data.calculated_at){
+      line = r.da + " \u2192 " + r.a + ": in attesa del calcolo";
+      box.appendChild(mk("div", "rt", line));
+      continue;
+    }
+
+    calculated = parseIso(data.calculated_at);
+
+    if(calculated === null ||
+       calculated.getFullYear() + "-" +
+       p2(calculated.getMonth() + 1) + "-" +
+       p2(calculated.getDate()) !== today){
+      continue;
+    }
+
+    departure = parseIso(data.departure);
+
+    if(departure === null){
+      continue;
+    }
+
+    line = r.da + " \u2192 " + r.a +
+      ": partenza " + hhmmRome(departure) +
+      " · " + data.duration_minutes + " min";
+
     box.appendChild(mk("div", "rt", line));
   }
 
   var st = "";
-  if(!CONFIG.routesUrl){
-    st = "Tempi di percorrenza non ancora configurati.";
-  } else if(routesData && routesData.generated_at){
+
+  if(routesData && routesData.generated_at){
     var g = parseIso(routesData.generated_at);
-    if(g !== null){ st = "Aggiornato alle " + hhmmRome(g); }
-    if(routesErr){ st += " - rete non disponibile"; }
-  } else if(routesErr){
-    st = "Tempi non raggiungibili.";
+    if(g !== null){
+      st = "Aggiornato alle " + hhmmRome(g);
+    }
+  }
+
+  if(routesErr){
+    st = st ? st + " - rete non disponibile" :
+      "Tempi non raggiungibili.";
   }
 
   setText($("routesStatus"), st);
 }
+
+/* ===== FINE SPOSTAMENTI ===== */
+
+
 
 /* ===== LISTA DA FARE ===== */
 var todoItems = [], todoRemote = false;
