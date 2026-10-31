@@ -306,9 +306,11 @@ function renderAgenda(){
       " " + p2(d.getUTCDate()) + "/" + p2(d.getUTCMonth() + 1);
   }
 
-  box.appendChild(mk("div", "agenda-period",
-    weekDateText(monday) + " – " + weekDateText(weekEnd)
-  ));
+	var period = mk("div", "agenda-period",
+	  weekDateText(monday) + " – " + weekDateText(weekEnd)
+	);
+	period.style.fontWeight = "bold";
+	box.appendChild(period);
 
   for(i = 0; i < 7; i++){ buckets.push([]); }
 
