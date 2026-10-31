@@ -253,7 +253,7 @@ for(i = 0; i < 7; i++){ buckets.push([]); }
       if(sd === null){ continue; }
       var last = (ed !== null && ed > sd) ? ed - 1 : sd;
       for(n = sd; n <= last; n++){
-        if(n >= monday && n < monday + 7){ buckets[n - today].push({key: -1, time: "Tutto il giorno", title: title}); }
+        if(n >= monday && n < monday + 7){ buckets[n - monday].push({key: -1, time: "Tutto il giorno", title: title}); }
       }
     } else {
       var ms = parseIso(e.start);
