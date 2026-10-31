@@ -675,13 +675,18 @@ function renderWeather() {
   else if (code === 85 || code === 86) icon = "🌨️";
   else if (code >= 95) icon = "⛈️";
 
-  if (iconEl) {
-  if (code === 0 || code === 1) {
-    iconEl.innerHTML = "<span class='sun-icon'></span>";
-  } else {
-    iconEl.innerHTML = icon;
-  }
-}
+	if (iconEl) {
+	  var hour = new Date().getHours();
+	  var night = (hour >= 20 || hour < 6);
+
+	  if (night && (code === 0 || code === 1 || code === 2)) {
+		iconEl.innerHTML = "☾";
+	  } else if (code === 0 || code === 1) {
+		iconEl.innerHTML = "<span class='sun-icon'></span>";
+	  } else {
+		iconEl.innerHTML = icon;
+	  }
+	}
 
   el.innerHTML =
     "Milano: " + temp + "°C, " + wcText(code) +
