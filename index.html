@@ -1007,12 +1007,21 @@ function todoConnect(){
   todoRequest("GET", null, function(err, data){
     todoBusy = false;
 
-    if(err || !data || !data.items){
-      todoConnected = false;
-      todoPin = "";
-      setText($("todoStatus"), "Connessione non riuscita: " + (err || "risposta non valida"));
-      return;
-    }
+	if(err || !data || !data.items){
+	  todoConnected = false;
+	  todoPin = "";
+
+	  var detail = data && data.detail ? data.detail : "";
+
+	  setText(
+		$("todoStatus"),
+		"Connessione non riuscita: " +
+		(err || "risposta non valida") +
+		(detail ? " - " + detail : "")
+	  );
+
+	  return;
+	}
 
     todoItems = data.items;
     todoConnected = true;
