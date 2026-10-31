@@ -246,6 +246,8 @@ function renderAgenda(){
   var today = todayNum(), buckets = [], i, j, n;
   var monday = today - ((dateOfDayNum(today).getUTCDay() + 6) % 7);
   
+  alert("Oggi: " + fullDateText(today) + "\nLunedì: " + fullDateText(monday));
+  
   setText($("agendaStatus"), "DEBUG oggi=" + fullDateText(today) + " | lunedì=" + fullDateText(monday));
 
   for(i = 0; i < 7; i++){ buckets.push([]); }
