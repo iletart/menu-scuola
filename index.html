@@ -85,12 +85,11 @@ h3{
   height:34px;
   margin:5px auto 0 auto;
   position:relative;
-  left:5px;
+  left:12px;
   border-radius:50%;
   background:#f5b400;
   border:3px solid #e0a000;
   box-sizing:border-box;
-  position:relative;
 }
 
 .sun-icon:before {
@@ -121,7 +120,7 @@ h3{
   height:30px;
   margin:7px auto 0 auto;
   position:relative;
-  left:5px;
+  left:12px;
   border-radius:50%;
   background:#e5c65a;
 }
@@ -644,7 +643,13 @@ function renderAgenda(){
 
 
 /* ===== METEO (Open-Meteo, nessuna chiave) ===== */
-var wData = null, wTime = 0, wErr = false;
+
+var wData = null;
+var wTime = 0;
+var wErr = false;
+var sunData = null;
+var sunDate = "";
+
 function wcText(c){
   if(c === 0){ return "Sereno"; }
   if(c === 1){ return "Prevalentemente sereno"; }
@@ -667,6 +672,34 @@ function loadWeather(){
     else { wErr = true; }
     safe(renderWeather);
     setTimeout(function(){ safe(loadWeather); }, CONFIG.weatherMin * 60000);
+  }, true);
+}
+
+function loadSunTimes() {
+  var now = new Date();
+  var year = now.getFullYear();
+  var month = now.getMonth() + 1;
+  var day = now.getDate();
+
+  var dateKey = year + "-" + month + "-" + day;
+
+  var url = "https://sunrise.am/api/sun-month-data/milan/" +
+            year + "/" + month;
+
+  getJson([url], function(err, d) {
+    if (!err && d && d.days) {
+      sunData = null;
+
+      for (var i = 0; i < d.days.length; i++) {
+        if (d.days[i].day === day) {
+          sunData = d.days[i];
+          sunDate = dateKey;
+          break;
+        }
+      }
+
+      safe(renderWeather);
+    }
   }, true);
 }
 
@@ -698,8 +731,37 @@ function renderWeather() {
   else if (code >= 95) icon = "⛈️";
 
   if (iconEl) {
-    var hour = new Date().getHours();
+    var now = new Date();
+    var hour = now.getHours();
+    var minute = now.getMinutes();
+    var currentTime = hour * 60 + minute;
+
+    var today = now.getFullYear() + "-" +
+                (now.getMonth() + 1) + "-" +
+                now.getDate();
+
+    /* Fallback se gli orari astronomici non sono disponibili */
     var night = (hour >= 17 || hour < 6);
+
+    if (sunData &&
+        sunDate === today &&
+        sunData.civil_twilight_start &&
+        sunData.civil_twilight_end) {
+
+      var dawn = sunData.civil_twilight_start.split(":");
+      var dusk = sunData.civil_twilight_end.split(":");
+
+      var dawnMinutes = parseInt(dawn[0], 10) * 60 +
+                        parseInt(dawn[1], 10);
+
+      var duskMinutes = parseInt(dusk[0], 10) * 60 +
+                        parseInt(dusk[1], 10);
+
+      night = (
+        currentTime < dawnMinutes ||
+        currentTime >= duskMinutes
+      );
+    }
 
     if (night && (code === 0 || code === 1 || code === 2)) {
       iconEl.innerHTML = "<span class='moon-icon'></span>";
@@ -1044,10 +1106,15 @@ if(IS_KINDLE){ document.body.className = "k"; }
 safe(updateClock);
 safe(loadAgenda);
 safe(loadWeather);
+safe(loadSunTimes);
 safe(loadRoutes);
 safe(loadTodo);
 safe(updateMenuButtons);
 safe(menuLoop);
+
+setInterval(function(){
+  safe(loadSunTimes);
+}, 3600000);
 
 function alignBottomBoxes(){
   var cols = document.querySelectorAll(".col");
