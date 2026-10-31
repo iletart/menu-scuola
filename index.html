@@ -322,8 +322,9 @@ function renderWeather(){
 /* ===== SPOSTAMENTI ===== */
 var ROUTES = [
   {id: "mattina", ora: "07:45", da: "Casa", a: "Lavoro"},
-  {id: "pomeriggio", ora: "13:45", da: "Lavoro", a: "Asilo"}
+  {id: "pomeriggio", ora: "16:45", da: "Lavoro", a: "Asilo"}
 ];
+
 var routesData = null, routesErr = false;
 function loadRoutes(){
   if(!CONFIG.routesUrl){ renderRoutes(); return; }
@@ -333,31 +334,28 @@ function loadRoutes(){
     setTimeout(function(){ safe(loadRoutes); }, 15 * 60000);
   });
 }
+
 function renderRoutes(){
-  var box = $("routes"), i, j;
+  var box = $("routes"), i;
   clear(box);
+
   for(i = 0; i < ROUTES.length; i++){
-    var r = ROUTES[i], d = mk("div", "rt");
-    d.appendChild(mk("div", "", "Ore " + r.ora));
-    d.firstChild.style.fontWeight = "bold";
-    d.appendChild(mk("div", "", "Da: " + r.da));
-    d.appendChild(mk("div", "", "A: " + r.a));
-    var tempo = "Tempo: non disponibile", rr = routesData ? routesData.routes : null;
-    if(rr){
-      for(j = 0; j < rr.length; j++){
-        if(rr[j].id === r.id && typeof rr[j].minutes === "number"){ tempo = "Tempo stimato: " + rr[j].minutes + " min"; }
-      }
-    }
-    d.appendChild(mk("div", "", tempo));
-    box.appendChild(d);
+    var r = ROUTES[i];
+    var line = r.da + " \u2192 " + r.a + " (ore " + r.ora + ")";
+    box.appendChild(mk("div", "rt", line));
   }
+
   var st = "";
-  if(!CONFIG.routesUrl){ st = "Servizio non ancora configurato: i tempi di percorrenza (Google Maps) non sono attivi."; }
-  else if(routesData && routesData.generated_at){
+  if(!CONFIG.routesUrl){
+    st = "Tempi di percorrenza non ancora configurati.";
+  } else if(routesData && routesData.generated_at){
     var g = parseIso(routesData.generated_at);
     if(g !== null){ st = "Aggiornato alle " + hhmmRome(g); }
     if(routesErr){ st += " - rete non disponibile"; }
-  } else if(routesErr){ st = "Tempi non raggiungibili."; }
+  } else if(routesErr){
+    st = "Tempi non raggiungibili.";
+  }
+
   setText($("routesStatus"), st);
 }
 
