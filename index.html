@@ -237,50 +237,89 @@ function cmpEv(a, b){ return a.key - b.key; }
 function renderAgenda(){
   var box = $("agenda"), st = $("agendaStatus");
   clear(box);
+
   if(!agendaData){
     setText(box, agendaErr ? "Agenda non disponibile (file non raggiungibile)." : "Caricamento...");
     return;
   }
-var today = todayNum(), buckets = [], i, j, n;
-var monday = today - ((dateOfDayNum(today).getUTCDay() + 6) % 7);
 
-for(i = 0; i < 7; i++){ buckets.push([]); }
+  var today = todayNum(), buckets = [], i, j, n;
+  var monday = today - ((dateOfDayNum(today).getUTCDay() + 6) % 7);
+
+  for(i = 0; i < 7; i++){ buckets.push([]); }
+
   var ev = agendaData.events || [];
+
   for(i = 0; i < ev.length; i++){
     var e = ev[i], title = e.title || "(senza titolo)";
+
     if(e.all_day){
       var sd = dateOnlyNum(e.start), ed = dateOnlyNum(e.end);
       if(sd === null){ continue; }
+
       var last = (ed !== null && ed > sd) ? ed - 1 : sd;
+
       for(n = sd; n <= last; n++){
-        if(n >= monday && n < monday + 7){ buckets[n - monday].push({key: -1, time: "Tutto il giorno", title: title}); }
+        if(n >= monday && n < monday + 7){
+          buckets[n - monday].push({
+            key: -1,
+            time: "Tutto il giorno",
+            title: title
+          });
+        }
       }
     } else {
       var ms = parseIso(e.start);
       if(ms === null){ continue; }
+
       n = dayNumOfRome(toRome(ms));
+
+      if(n >= monday && n < monday + 7){
+        buckets[n - monday].push({
+          key: ms,
+          time: hhmmRome(ms),
+          title: title
+        });
+      }
     }
   }
+
   var any = false;
+
   for(i = 0; i < 7; i++){
     if(!buckets[i].length){ continue; }
+
     any = true;
     buckets[i].sort(cmpEv);
+
     box.appendChild(mk("h3", "", dayLabel(monday + i, today)));
+
     for(j = 0; j < buckets[i].length; j++){
       var row = mk("div", "ev");
-      row.appendChild(mk("span", "t", buckets[i][j].time === "Tutto il giorno" ? "Tutto il giorno" : buckets[i][j].time));
+
+      row.appendChild(mk("span", "t", buckets[i][j].time));
       row.appendChild(mk("span", "tt", buckets[i][j].title));
+
       box.appendChild(row);
     }
   }
-  if(!any){ setText(box, "Nessun impegno nei prossimi 7 giorni."); }
+
+  if(!any){ setText(box, "Nessun impegno nella settimana."); }
+
   var gen = parseIso(agendaData.generated_at), txt = "";
+
   if(gen !== null){
     txt = "Agenda aggiornata alle " + hhmmRome(gen);
-    if(new Date().getTime() - gen > 3 * 3600000){ txt += " (dati vecchi)"; }
+
+    if(new Date().getTime() - gen > 3 * 3600000){
+      txt += " (dati vecchi)";
+    }
   }
-  if(agendaErr){ txt += " - rete non disponibile, mostro gli ultimi dati"; }
+
+  if(agendaErr){
+    txt += " - rete non disponibile, mostro gli ultimi dati";
+  }
+
   setText(st, txt);
 }
 
